@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 # Security / Environment Variables
+.ssh/
 .env
 .env.*
 !.env.example
