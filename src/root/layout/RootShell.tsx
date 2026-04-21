@@ -3,10 +3,12 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, DollarSign, Shield, Settings,
   LogOut, ChevronLeft, ChevronRight, GraduationCap, Wrench,
+  Sun, Moon,
 } from 'lucide-react';
 import { useRootAuth, ROLE_CONFIG, ROLE_PERMISSIONS } from '../../contexts/RootAuthContext';
 import type { RootRole } from '../../contexts/RootAuthContext';
 import { NotificacaoPainel } from '../components/NotificacaoPainel';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ============================================================
 // Itens da sidebar — filtrados por role do operador logado
@@ -49,6 +51,7 @@ const NAV_ITEMS = [
 // ============================================================
 export const RootShell = () => {
   const { operador, signOut } = useRootAuth();
+  const { isDark, toggleTema } = useTheme();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -65,22 +68,22 @@ export const RootShell = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#0a0f1e] text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-[#0a0f1e] text-gray-600 dark:text-gray-100 overflow-hidden transition-colors duration-300">
 
       {/* ===== SIDEBAR ===== */}
       <aside
-        className={`flex flex-col border-r border-[#1e2d4a] bg-[#0e1425] transition-all duration-300 flex-shrink-0 ${
+        className={`flex flex-col border-r border-gray-100 dark:border-[#1e2d4a] bg-white dark:bg-[#0e1425] transition-all duration-300 flex-shrink-0 ${
           collapsed ? 'w-[68px]' : 'w-64'
         }`}
       >
         {/* Logo / Branding */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-[#1e2d4a]">
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-100 dark:border-[#1e2d4a]">
           <div className="w-9 h-9 bg-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
             <GraduationCap size={18} className="text-gray-900" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="font-bold text-white text-sm leading-none">EduGestão</p>
+              <p className="font-bold text-gray-900 dark:text-white text-sm leading-none">EduGestão</p>
               <p className="text-[10px] text-amber-400 font-semibold tracking-widest uppercase mt-0.5">
                 BackOffice
               </p>
@@ -98,8 +101,8 @@ export const RootShell = () => {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-amber-400/15 text-amber-400 border border-amber-400/20'
-                    : 'text-gray-400 hover:text-gray-100 hover:bg-white/5'
+                    ? 'bg-amber-400/15 text-amber-500 dark:text-amber-400 border border-amber-400/20'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-white/5'
                 }`
               }
             >
@@ -110,10 +113,10 @@ export const RootShell = () => {
         </nav>
 
         {/* Perfil + Sair */}
-        <div className="p-3 border-t border-[#1e2d4a]">
+        <div className="p-3 border-t border-gray-100 dark:border-[#1e2d4a]">
           {!collapsed && operador && (
-            <div className="px-3 py-2.5 mb-2 rounded-xl bg-white/5">
-              <p className="text-xs font-semibold text-white truncate">{operador.nome}</p>
+            <div className="px-3 py-2.5 mb-2 rounded-xl bg-gray-100 dark:bg-white/5">
+              <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{operador.nome}</p>
               {roleConfig && (
                 <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border mt-1 ${roleConfig.bg} ${roleConfig.color}`}>
                   {roleConfig.label}
@@ -124,7 +127,7 @@ export const RootShell = () => {
           <button
             onClick={handleSignOut}
             title="Sair"
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-all"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut size={16} className="flex-shrink-0" />
             {!collapsed && <span>Sair</span>}
@@ -134,7 +137,7 @@ export const RootShell = () => {
         {/* Botão de colapsar */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute bottom-20 -right-3 w-6 h-6 bg-[#1e2d4a] border border-[#2a3f5f] rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-colors shadow-lg"
+          className="absolute bottom-20 -right-3 w-6 h-6 bg-white dark:bg-[#1e2d4a] border border-gray-200 dark:border-[#2a3f5f] rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-white transition-colors shadow-lg"
           style={{ position: 'absolute', left: collapsed ? '56px' : '252px' }}
         >
           {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
@@ -145,7 +148,7 @@ export const RootShell = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-[#1e2d4a] bg-[#0e1425] flex-shrink-0">
+        <header className="h-16 flex items-center justify-between px-6 border-b border-gray-100 dark:border-[#1e2d4a] bg-white dark:bg-[#0e1425] flex-shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-2">
             <Wrench size={14} className="text-amber-400" />
             <span className="text-xs font-semibold text-amber-400 tracking-widest uppercase">
@@ -154,6 +157,15 @@ export const RootShell = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Toggle de Tema */}
+            <button
+              onClick={toggleTema}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-white transition-all"
+              title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+
             {/* Painel de notificações com campainha e dropdown */}
             <NotificacaoPainel />
 
@@ -163,10 +175,10 @@ export const RootShell = () => {
                 <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center font-bold text-gray-900 text-sm">
                   {operador.nome.charAt(0).toUpperCase()}
                 </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-white leading-none">{operador.nome}</p>
+                 <div className="hidden sm:block text-left">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">{operador.nome}</p>
                   {roleConfig && (
-                    <p className={`text-[10px] font-bold mt-0.5 ${roleConfig.color}`}>
+                    <p className={`text-[10px] font-bold mt-1 leading-none ${roleConfig.color}`}>
                       {roleConfig.label}
                     </p>
                   )}

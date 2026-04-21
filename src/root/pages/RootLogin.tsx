@@ -74,7 +74,7 @@ export const RootLogin = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1e] flex items-center justify-center p-4 transition-colors duration-500">
 
       {/* Gradiente sutil de fundo */}
       <div className="absolute inset-0 overflow-hidden">
@@ -89,14 +89,14 @@ export const RootLogin = () => {
           <div className="w-16 h-16 bg-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-400/20">
             <GraduationCap size={32} className="text-gray-900" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white">EduGestão Pro</h1>
-          <p className="text-xs text-amber-400 font-semibold tracking-widest uppercase mt-1">
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">EduGestão Pro</h1>
+          <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold tracking-widest uppercase mt-1">
             Acesso Restrito · BackOffice
           </p>
         </div>
 
         {/* Card de Login */}
-        <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-8 shadow-xl dark:shadow-2xl transition-colors">
 
           {/* Mensagem de erro */}
           {erro && (
@@ -110,7 +110,7 @@ export const RootLogin = () => {
 
             {/* E-mail */}
             <div>
-              <label htmlFor="root-email" className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+              <label htmlFor="root-email" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
                 E-mail de acesso
               </label>
               <input
@@ -121,13 +121,13 @@ export const RootLogin = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="operador@sistema.com"
-                className="w-full px-4 py-3 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-white placeholder-gray-600 text-sm focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 text-sm focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 transition-all"
               />
             </div>
 
             {/* Senha */}
             <div>
-              <label htmlFor="root-senha" className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+              <label htmlFor="root-senha" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
                 Senha
               </label>
               <div className="relative">
@@ -139,7 +139,7 @@ export const RootLogin = () => {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 pr-11 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-white placeholder-gray-600 text-sm focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 transition-all"
+                  className="w-full px-4 py-3 pr-11 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 text-sm focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 transition-all"
                 />
                 <button
                   type="button"
@@ -174,7 +174,7 @@ export const RootLogin = () => {
         </div>
 
         {/* Rodapé discreto */}
-        <p className="text-center text-xs text-gray-700 mt-6">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-700 mt-6">
           Acesso restrito a operadores autorizados.
         </p>
       </div>

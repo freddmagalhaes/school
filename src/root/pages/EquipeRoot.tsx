@@ -131,10 +131,10 @@ export const EquipeRoot = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2">
-            <Shield size={22} className="text-amber-400" /> Equipe Interna
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+            <Shield size={22} className="text-amber-500 dark:text-amber-400" /> Equipe Interna
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Operadores com acesso ao BackOffice · {equipe.filter(o => o.is_active).length} ativos
           </p>
         </div>
@@ -163,9 +163,9 @@ export const EquipeRoot = () => {
       )}
 
       {/* Tabela de operadores */}
-      <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl overflow-hidden shadow-sm dark:shadow-none transition-colors">
         <table className="w-full text-sm">
-          <thead className="border-b border-[#1e2d4a]">
+          <thead className="border-b border-gray-100 dark:border-[#1e2d4a]">
             <tr className="text-xs text-gray-500 uppercase tracking-wider">
               <th className="text-left px-5 py-3.5 font-medium">Operador</th>
               <th className="text-left px-5 py-3.5 font-medium">Role / Acesso</th>
@@ -179,7 +179,7 @@ export const EquipeRoot = () => {
               Array.from({ length: 3 }).map((_, i) => (
                 <tr key={i}>
                   <td colSpan={5} className="px-5 py-4">
-                    <div className="h-4 bg-[#1e2d4a] rounded animate-pulse" />
+                    <div className="h-4 bg-gray-50 dark:bg-[#1e2d4a] rounded animate-pulse" />
                   </td>
                 </tr>
               ))
@@ -187,16 +187,16 @@ export const EquipeRoot = () => {
               const roleC = ROLE_CONFIG[op.role];
               const ehVoce = op.id === operadorLogado?.id;
               return (
-                <tr key={op.id} className="hover:bg-white/2 transition-colors">
+                <tr key={op.id} className="hover:bg-gray-50 dark:hover:bg-white/2 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center font-bold text-gray-900 text-sm flex-shrink-0">
                         {op.nome.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-100">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">
                           {op.nome}
-                          {ehVoce && <span className="ml-2 text-[10px] text-amber-400 font-bold">(você)</span>}
+                          {ehVoce && <span className="ml-2 text-[10px] text-amber-500 dark:text-amber-400 font-bold">(você)</span>}
                         </p>
                         <p className="text-xs text-gray-500">{op.email}</p>
                       </div>
@@ -212,7 +212,7 @@ export const EquipeRoot = () => {
                         <select
                           value={op.role}
                           onChange={(e) => mudarRole(op, e.target.value as RootRole)}
-                          className="bg-[#141c2e] border border-[#1e2d4a] text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-400/40"
+                          className="bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] text-gray-600 dark:text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-400/40 transition-colors"
                         >
                           {ROLES_DISPONIVEIS.map((r) => (
                             <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>
@@ -259,10 +259,10 @@ export const EquipeRoot = () => {
 
       {/* Modal: Novo Operador */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#0e1425] border border-gray-200 dark:border-[#1e2d4a] rounded-2xl p-8 w-full max-w-md shadow-2xl transition-colors">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-white">Novo Operador</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Novo Operador</h2>
               <button onClick={() => setModalAberto(false)} className="text-gray-500 hover:text-gray-300">
                 <X size={20} />
               </button>
@@ -278,7 +278,7 @@ export const EquipeRoot = () => {
                   value={novoOp.nome}
                   onChange={(e) => setNovoOp({ ...novoOp, nome: e.target.value })}
                   placeholder="Nome completo"
-                  className="w-full px-4 py-2.5 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
                 />
               </div>
               <div>
@@ -290,7 +290,7 @@ export const EquipeRoot = () => {
                   value={novoOp.email}
                   onChange={(e) => setNovoOp({ ...novoOp, email: e.target.value })}
                   placeholder="operador@empresa.com"
-                  className="w-full px-4 py-2.5 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
                 />
               </div>
               <div>
@@ -303,7 +303,7 @@ export const EquipeRoot = () => {
                   value={novoOp.senha}
                   onChange={(e) => setNovoOp({ ...novoOp, senha: e.target.value })}
                   placeholder="Mínimo 8 caracteres"
-                  className="w-full px-4 py-2.5 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
                 />
               </div>
               <div>
@@ -311,7 +311,7 @@ export const EquipeRoot = () => {
                 <select
                   value={novoOp.role}
                   onChange={(e) => setNovoOp({ ...novoOp, role: e.target.value as RootRole })}
-                  className="w-full px-4 py-2.5 bg-[#141c2e] border border-[#1e2d4a] rounded-xl text-sm text-gray-300 focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:border-amber-400/40 transition-all"
                 >
                   {ROLES_DISPONIVEIS.map((r) => (
                     <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>
@@ -329,7 +329,7 @@ export const EquipeRoot = () => {
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className="flex-1 border border-[#1e2d4a] text-gray-400 hover:text-gray-200 hover:bg-white/5 font-semibold py-2.5 rounded-xl transition-all text-sm"
+                  className="flex-1 border border-gray-200 dark:border-[#1e2d4a] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 font-semibold py-2.5 rounded-xl transition-all text-sm"
                 >
                   Cancelar
                 </button>

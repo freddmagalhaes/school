@@ -54,8 +54,8 @@ export const ClienteDetalhe = () => {
         // Mock para desenvolvimento
         const mock: Assinatura = {
           id: id || '1',
-          nome: 'João da Silva', email: 'joao@escola.com', documento: '123.456.789-00',
-          telefone: '(31) 99999-9999', nome_escola: 'E.E. José de Alencar',
+          nome: 'Cliente Exemplo', email: 'contato@escolaexemplo.com', documento: '00.000.000/0001-00',
+          telefone: '(00) 00000-0000', nome_escola: 'Escola Modelo de Exemplo',
           plano: 'profissional', ciclo: 'mensal', metodo_pgto: 'pix',
           valor_total: 397, status: 'pendente', observacoes: '',
           created_at: '2026-04-20T10:00:00Z', updated_at: '2026-04-20T10:00:00Z',
@@ -124,13 +124,13 @@ export const ClienteDetalhe = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate('/ops/clientes')}
-          className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+          className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors"
         >
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-extrabold text-white">{cliente.nome_escola}</h1>
-          <p className="text-gray-400 text-sm">{cliente.nome} · {cliente.email}</p>
+          <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">{cliente.nome_escola}</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{cliente.nome} · {cliente.email}</p>
         </div>
         <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${statusC.classes}`}>
           {statusC.label}
@@ -151,8 +151,8 @@ export const ClienteDetalhe = () => {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Dados do cliente */}
-        <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-6 space-y-4">
-          <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Dados do Contato</h2>
+        <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-6 space-y-4 shadow-sm dark:shadow-none">
+          <h2 className="text-sm font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider mb-4">Dados do Contato</h2>
           {[
             { icon: Building2, label: 'Escola', value: cliente.nome_escola },
             { icon: Mail,      label: 'E-mail', value: cliente.email },
@@ -161,20 +161,20 @@ export const ClienteDetalhe = () => {
             { icon: Calendar,  label: 'Assinatura em', value: new Date(cliente.created_at).toLocaleDateString('pt-BR') },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#141c2e] border border-[#1e2d4a] rounded-lg flex items-center justify-center flex-shrink-0">
-                <Icon size={14} className="text-amber-400" />
+              <div className="w-8 h-8 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-lg flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-amber-500 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
-                <p className="text-gray-200 text-sm font-medium">{value}</p>
+                <p className="text-gray-900 dark:text-gray-200 text-sm font-medium">{value}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Dados da assinatura */}
-        <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-6 space-y-4">
-          <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Assinatura</h2>
+        <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-6 space-y-4 shadow-sm dark:shadow-none">
+          <h2 className="text-sm font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider mb-4">Assinatura</h2>
           {[
             { icon: CreditCard, label: 'Plano', value: cliente.plano },
             { icon: Calendar,   label: 'Ciclo', value: cliente.ciclo },
@@ -182,12 +182,12 @@ export const ClienteDetalhe = () => {
             { icon: CreditCard, label: 'Valor total', value: `R$ ${cliente.valor_total.toLocaleString('pt-BR')}/${cliente.ciclo === 'anual' ? 'ano' : 'mês'}` },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#141c2e] border border-[#1e2d4a] rounded-lg flex items-center justify-center flex-shrink-0">
-                <Icon size={14} className="text-amber-400" />
+              <div className="w-8 h-8 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-lg flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-amber-500 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
-                <p className="text-gray-200 text-sm font-medium capitalize">{value}</p>
+                <p className="text-gray-900 dark:text-gray-200 text-sm font-medium capitalize">{value}</p>
               </div>
             </div>
           ))}
@@ -195,8 +195,8 @@ export const ClienteDetalhe = () => {
       </div>
 
       {/* Ações de status */}
-      <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-6">
-        <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Ações</h2>
+      <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-6 shadow-sm dark:shadow-none">
+        <h2 className="text-sm font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider mb-4">Ações</h2>
         <div className="flex flex-wrap gap-3">
           <button
             disabled={cliente.status === 'ativo' || salvando}
@@ -226,7 +226,7 @@ export const ClienteDetalhe = () => {
             href={`https://wa.me/55${(cliente.telefone || '').replace(/\D/g, '')}?text=Ol%C3%A1%20${encodeURIComponent(cliente.nome)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#141c2e] text-gray-300 border border-[#1e2d4a] hover:border-amber-400/30 rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-[#1e2d4a] hover:border-amber-400/30 rounded-xl text-sm font-semibold transition-all"
           >
             <Phone size={15} />
             WhatsApp
@@ -235,8 +235,8 @@ export const ClienteDetalhe = () => {
       </div>
 
       {/* Observações internas */}
-      <div className="bg-[#0e1425] border border-[#1e2d4a] rounded-2xl p-6">
-        <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">
+      <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-6 shadow-sm dark:shadow-none">
+        <h2 className="text-sm font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider mb-4">
           Observações Internas
         </h2>
         <textarea
@@ -244,7 +244,7 @@ export const ClienteDetalhe = () => {
           value={obs}
           onChange={(e) => setObs(e.target.value)}
           placeholder="Notas sobre este cliente (visíveis apenas para a equipe interna)..."
-          className="w-full bg-[#141c2e] border border-[#1e2d4a] text-gray-300 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400/40 resize-none placeholder-gray-600 transition-all"
+          className="w-full bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] text-gray-900 dark:text-gray-300 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400/40 resize-none placeholder-gray-400 dark:placeholder-gray-600 transition-all"
         />
         <div className="flex justify-end mt-3">
           <button
