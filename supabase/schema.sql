@@ -356,8 +356,23 @@ DROP POLICY IF EXISTS "Somente o dono pode gerenciar operadores" ON public.root_
 DROP POLICY IF EXISTS "Root admins podem ver assinaturas" ON public.assinaturas;
 DROP POLICY IF EXISTS "Root admins podem atualizar assinaturas" ON public.assinaturas;
 
--- 2. Criar função segura (sem RLS)
-CREATE OR REPLACE FUNCTION public.is_root_admin()
+-- 2. Criar função segura que verifica se o usuário é um operador ativo (root ou não)
+CREATE OR REPLACE FUNCTION public.is_operator_active()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.root_admins
+    WHERE id = auth.uid()
+      AND is_active = TRUE
+  );
+$$;
+
+-- 3. Função para verificar se é o dono (is_root)
+CREATE OR REPLACE FUNCTION public.is_root_owner()
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
@@ -372,38 +387,36 @@ AS $$
   );
 $$;
 
--- (Opcional, mas recomendado)
-REVOKE ALL ON FUNCTION public.is_root_admin() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_root_admin() TO authenticated;
-
--- 3. Garantir que RLS está ativo
-ALTER TABLE public.root_admins ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.assinaturas ENABLE ROW LEVEL SECURITY;
+-- (Garantir permissões de execução)
+REVOKE ALL ON FUNCTION public.is_operator_active() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_root_owner() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_operator_active() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_root_owner() TO authenticated;
 
 -- 4. Criar policies corrigidas para root_admins
 
--- SELECT
-CREATE POLICY "Equipe root pode ver os membros"
+-- SELECT: Qualquer operador ativo pode ver a equipe
+CREATE POLICY "Operadores ativos podem ver a equipe"
 ON public.root_admins
 FOR SELECT
-USING (public.is_root_admin());
+USING (public.is_operator_active());
 
--- INSERT, UPDATE, DELETE
+-- INSERT, UPDATE, DELETE: Somente o dono (root) pode gerenciar a equipe
 CREATE POLICY "Somente o dono pode gerenciar operadores"
 ON public.root_admins
 FOR ALL
-USING (public.is_root_admin())
-WITH CHECK (public.is_root_admin());
+USING (public.is_root_owner())
+WITH CHECK (public.is_root_owner());
 
--- 5. Policies para assinaturas
-
-CREATE POLICY "Root admins podem ver assinaturas"
+-- 5. Policies para assinaturas (Leads/Clientes)
+-- Qualquer operador ativo pode ver e atualizar clientes
+CREATE POLICY "Qualquer operador ativo pode ver assinaturas"
 ON public.assinaturas
 FOR SELECT
-USING (public.is_root_admin());
+USING (public.is_operator_active());
 
-CREATE POLICY "Root admins podem atualizar assinaturas"
+CREATE POLICY "Qualquer operador ativo pode atualizar assinaturas"
 ON public.assinaturas
 FOR UPDATE
-USING (public.is_root_admin())
-WITH CHECK (public.is_root_admin());
+USING (public.is_operator_active())
+WITH CHECK (public.is_operator_active());

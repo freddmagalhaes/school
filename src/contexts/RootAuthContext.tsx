@@ -51,6 +51,7 @@ interface RootAuthContextType {
   isRoot: boolean;
   loading: boolean;
   hasPermission: (roles: RootRole[]) => boolean;
+  refreshOperador: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -103,18 +104,19 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error || !data) {
-        // Usuário logou mas NÃO é um operador root ativo — desconectar imediatamente
-        console.warn('[RootAuth] Acesso negado: usuário não é operador root ativo.');
-        await supabase.auth.signOut();
-        setUser(null);
+        // Se houver erro ou não encontrar o operador, limpamos o estado local
+        // mas só damos signOut se for um erro de "acesso negado" explícito
+        // ou se realmente não houver sessão ativa
+        console.warn('[RootAuth] Operador não encontrado ou inativo.');
         setOperador(null);
+        // Opcional: só deslogar se realmente quisermos expulsar o cara
+        // por enquanto, vamos só limpar o operador e o guard de rota fará o trabalho
         return;
       }
 
       setOperador(data as RootAdmin);
-    } catch {
-      await supabase.auth.signOut();
-      setUser(null);
+    } catch (err) {
+      console.error('[RootAuth] Erro ao buscar operador:', err);
       setOperador(null);
     } finally {
       setLoading(false);
@@ -140,6 +142,7 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
       isRoot: operador?.is_root ?? false,
       loading,
       hasPermission,
+      refreshOperador: () => user ? fetchOperador(user.id) : Promise.resolve(),
       signOut,
     }}>
       {children}

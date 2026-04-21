@@ -22,12 +22,14 @@ type NovoOperador = {
 const ROLES_DISPONIVEIS: RootRole[] = ['super_admin', 'suporte', 'financeiro', 'operacional'];
 
 export const EquipeRoot = () => {
-  const { operador: operadorLogado } = useRootAuth();
+  const { operador: operadorLogado, refreshOperador } = useRootAuth();
   const [equipe, setEquipe] = useState<RootAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
+  const [operadorEmEdicao, setOperadorEmEdicao] = useState<RootAdmin | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState<{ tipo: 'ok' | 'erro'; msg: string } | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState<string | null>(null);
   const [novoOp, setNovoOp] = useState<NovoOperador>({
     nome: '', email: '', senha: '', role: 'suporte',
   });
@@ -44,10 +46,11 @@ export const EquipeRoot = () => {
         .select('*')
         .order('created_at', { ascending: true });
 
-      if (error || !data || data.length === 0) {
-        setEquipe(MOCK_EQUIPE);
+      if (error) {
+        setFeedback({ tipo: 'erro', msg: 'Erro ao carregar equipe: ' + error.message });
+        setEquipe([]);
       } else {
-        setEquipe(data);
+        setEquipe(data || []);
       }
     } catch {
       setEquipe(MOCK_EQUIPE);
@@ -58,50 +61,88 @@ export const EquipeRoot = () => {
 
   // Cria novo operador via Supabase Admin (requer service role key no backend)
   // Por ora, insere diretamente (funciona em dev com service_role)
-  const criarOperador = async (e: React.FormEvent) => {
+  const salvarOperador = async (e: React.FormEvent) => {
     e.preventDefault();
     setSalvando(true);
     setFeedback(null);
 
     try {
-      // 1. Cria o usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: novoOp.email,
-        password: novoOp.senha,
-      });
+      if (operadorEmEdicao) {
+        // MODO EDIÇÃO
+        const { error } = await supabase
+          .from('root_admins')
+          .update({
+            nome: novoOp.nome,
+            role: novoOp.role,
+          })
+          .eq('id', operadorEmEdicao.id);
 
-      if (authError || !authData.user) {
-        setFeedback({ tipo: 'erro', msg: authError?.message || 'Erro ao criar usuário.' });
-        return;
-      }
+        if (error) throw error;
 
-      // 2. Insere na tabela root_admins
-      const { error: insertError } = await supabase
-        .from('root_admins')
-        .insert({
-          id: authData.user.id,
-          nome: novoOp.nome,
+        // Se o usuário editou a si mesmo, atualiza o contexto global para o nome mudar na Topbar
+        if (operadorEmEdicao.id === operadorLogado?.id) {
+          await refreshOperador();
+        }
+
+        setFeedback({ tipo: 'ok', msg: 'Operador atualizado com sucesso!' });
+      } else {
+        // MODO CRIAÇÃO
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: novoOp.email,
-          role: novoOp.role,
-          is_root: false,
-          is_active: true,
-          created_by: operadorLogado?.id,
+          password: novoOp.senha,
         });
 
-      if (insertError) {
-        setFeedback({ tipo: 'erro', msg: 'Usuário criado no Auth, mas erro ao inserir na equipe: ' + insertError.message });
-        return;
+        if (authError || !authData.user) {
+          setFeedback({ tipo: 'erro', msg: authError?.message || 'Erro ao criar usuário.' });
+          return;
+        }
+
+        const { error: insertError } = await supabase
+          .from('root_admins')
+          .insert({
+            id: authData.user.id,
+            nome: novoOp.nome,
+            email: novoOp.email,
+            role: novoOp.role,
+            is_root: false,
+            is_active: true,
+            created_by: operadorLogado?.id,
+          });
+
+        if (insertError) {
+          setFeedback({ tipo: 'erro', msg: 'Usuário criado no Auth, mas erro ao inserir na equipe: ' + insertError.message });
+          return;
+        }
+
+        setFeedback({ tipo: 'ok', msg: `Operador "${novoOp.nome}" criado com sucesso!` });
       }
 
-      setFeedback({ tipo: 'ok', msg: `Operador "${novoOp.nome}" criado com sucesso!` });
       setModalAberto(false);
       setNovoOp({ nome: '', email: '', senha: '', role: 'suporte' });
+      setOperadorEmEdicao(null);
       fetchEquipe();
-    } catch {
-      setFeedback({ tipo: 'erro', msg: 'Erro inesperado. Tente novamente.' });
+    } catch (err: any) {
+      setFeedback({ tipo: 'erro', msg: err?.message || 'Erro inesperado. Tente novamente.' });
     } finally {
       setSalvando(false);
     }
+  };
+
+  const abrirEdicao = (op: RootAdmin) => {
+    setOperadorEmEdicao(op);
+    setNovoOp({
+      nome: op.nome,
+      email: op.email,
+      senha: '', // senha não é editada por aqui por segurança
+      role: op.role,
+    });
+    setModalAberto(true);
+  };
+
+  const abrirCriacao = () => {
+    setOperadorEmEdicao(null);
+    setNovoOp({ nome: '', email: '', senha: '', role: 'suporte' });
+    setModalAberto(true);
   };
 
   const toggleAtivo = async (op: RootAdmin) => {
@@ -127,6 +168,29 @@ export const EquipeRoot = () => {
     }
   };
 
+  const deletarOperador = async (id: string) => {
+    if (confirmarExclusao !== id) {
+      setConfirmarExclusao(id);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('root_admins')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setEquipe(prev => prev.filter(op => op.id !== id));
+      setFeedback({ tipo: 'ok', msg: 'Operador removido da equipe.' });
+    } catch (err: any) {
+      setFeedback({ tipo: 'erro', msg: 'Erro ao excluir: ' + err.message });
+    } finally {
+      setConfirmarExclusao(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -141,7 +205,7 @@ export const EquipeRoot = () => {
         <RootRoleGuard roles={['root']}>
           <button
             id="btn-novo-operador"
-            onClick={() => setModalAberto(true)}
+            onClick={abrirCriacao}
             className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold px-4 py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-amber-400/10"
           >
             <Plus size={16} />
@@ -234,21 +298,45 @@ export const EquipeRoot = () => {
                     {new Date(op.created_at).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-5 py-4">
-                    <RootRoleGuard roles={['root']}>
-                      {!op.is_root && (
+                    <div className="flex items-center gap-1 justify-end">
+                      <RootRoleGuard roles={['root']}>
                         <button
-                          onClick={() => toggleAtivo(op)}
-                          title={op.is_active ? 'Desativar' : 'Ativar'}
-                          className={`p-2 rounded-lg transition-colors ${
-                            op.is_active
-                              ? 'text-rose-400 hover:bg-rose-400/10'
-                              : 'text-emerald-400 hover:bg-emerald-400/10'
-                          }`}
+                          onClick={() => abrirEdicao(op)}
+                          className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                          title="Editar dados"
                         >
-                          {op.is_active ? <UserX size={15} /> : <UserCheck size={15} />}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
-                      )}
-                    </RootRoleGuard>
+                        {!op.is_root && (
+                          <>
+                            <button
+                              onClick={() => toggleAtivo(op)}
+                              title={op.is_active ? 'Desativar' : 'Ativar'}
+                              className={`p-2 rounded-lg transition-colors ${
+                                op.is_active
+                                  ? 'text-rose-400 hover:bg-rose-400/10'
+                                  : 'text-emerald-400 hover:bg-emerald-400/10'
+                              }`}
+                            >
+                              {op.is_active ? <UserX size={15} /> : <UserCheck size={15} />}
+                            </button>
+                            <button
+                              onClick={() => deletarOperador(op.id)}
+                              title="Excluir permanentemente"
+                              className={`p-2 rounded-lg transition-all ${
+                                confirmarExclusao === op.id
+                                  ? 'bg-rose-500 text-white animate-pulse'
+                                  : 'text-gray-400 hover:text-rose-500 hover:bg-rose-500/10'
+                              }`}
+                            >
+                              {confirmarExclusao === op.id ? <Check size={15} /> : (
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                              )}
+                            </button>
+                          </>
+                        )}
+                      </RootRoleGuard>
+                    </div>
                   </td>
                 </tr>
               );
@@ -262,13 +350,18 @@ export const EquipeRoot = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-[#0e1425] border border-gray-200 dark:border-[#1e2d4a] rounded-2xl p-8 w-full max-w-md shadow-2xl transition-colors">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Novo Operador</h2>
-              <button onClick={() => setModalAberto(false)} className="text-gray-500 hover:text-gray-300">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                {operadorEmEdicao ? 'Editar Operador' : 'Novo Operador'}
+              </h2>
+              <button 
+                onClick={() => { setModalAberto(false); setOperadorEmEdicao(null); }} 
+                className="text-gray-500 hover:text-gray-300"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form id="form-novo-operador" onSubmit={criarOperador} className="flex flex-col gap-4">
+            <form id="form-operador" onSubmit={salvarOperador} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Nome*</label>
                 <input
@@ -281,31 +374,35 @@ export const EquipeRoot = () => {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">E-mail*</label>
-                <input
-                  id="novo-op-email"
-                  type="email"
-                  required
-                  value={novoOp.email}
-                  onChange={(e) => setNovoOp({ ...novoOp, email: e.target.value })}
-                  placeholder="operador@empresa.com"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Senha inicial*</label>
-                <input
-                  id="novo-op-senha"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={novoOp.senha}
-                  onChange={(e) => setNovoOp({ ...novoOp, senha: e.target.value })}
-                  placeholder="Mínimo 8 caracteres"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
-                />
-              </div>
+              {!operadorEmEdicao && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">E-mail*</label>
+                    <input
+                      id="novo-op-email"
+                      type="email"
+                      required
+                      value={novoOp.email}
+                      onChange={(e) => setNovoOp({ ...novoOp, email: e.target.value })}
+                      placeholder="operador@empresa.com"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Senha inicial*</label>
+                    <input
+                      id="novo-op-senha"
+                      type="password"
+                      required
+                      minLength={8}
+                      value={novoOp.senha}
+                      onChange={(e) => setNovoOp({ ...novoOp, senha: e.target.value })}
+                      placeholder="Mínimo 8 caracteres"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-amber-400/40 transition-all"
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Nível de acesso*</label>
                 <select
@@ -342,7 +439,10 @@ export const EquipeRoot = () => {
                   {salvando ? (
                     <div className="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <><Plus size={14} /> Criar Operador</>
+                    <>
+                      {operadorEmEdicao ? <Check size={14} /> : <Plus size={14} />} 
+                      {operadorEmEdicao ? 'Salvar Alterações' : 'Criar Operador'}
+                    </>
                   )}
                 </button>
               </div>
