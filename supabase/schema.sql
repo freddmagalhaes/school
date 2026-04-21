@@ -257,3 +257,153 @@ CREATE POLICY "Admins autenticados podem ver assinaturas" ON public.assinaturas
 CREATE POLICY "Admins autenticados podem atualizar assinaturas" ON public.assinaturas
     FOR UPDATE USING (auth.role() = 'authenticated');
 
+-- ==========================================
+-- 5. Equipe Interna / Administradores Root
+-- ==========================================
+-- Tabela exclusiva para o dono e operadores internos do sistema.
+-- Completamente separada dos usuários de escola (clientes).
+-- Nenhum cliente tem acesso ou conhecimento desta tabela.
+
+-- Níveis de acesso dos operadores internos
+CREATE TYPE root_role AS ENUM (
+  'root',        -- Dono do sistema: acesso total, único que cria/remove operadores
+  'super_admin', -- Acesso total, exceto gerenciar outros operadores
+  'suporte',     -- Vê e gerencia clientes, NÃO vê financeiro
+  'financeiro',  -- Vê dashboard e financeiro, NÃO gerencia clientes
+  'operacional'  -- Parametrização e provisionamento de clientes
+);
+
+CREATE TABLE public.root_admins (
+    id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    nome        VARCHAR(255) NOT NULL,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    role        root_role NOT NULL DEFAULT 'suporte',
+    is_root     BOOLEAN NOT NULL DEFAULT FALSE,  -- TRUE somente para o dono
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by  UUID REFERENCES public.root_admins(id), -- rastreabilidade
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Atualiza updated_at automaticamente (reutiliza a função já criada na seção 4)
+CREATE TRIGGER trg_root_admins_updated_at
+BEFORE UPDATE ON public.root_admins
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ---- Funções Helper de Permissão ----
+
+-- Retorna TRUE se o usuário autenticado é um operador root ativo
+CREATE OR REPLACE FUNCTION is_root_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.root_admins
+    WHERE id = auth.uid() AND is_active = TRUE
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Retorna TRUE se o operador logado tem um dos roles informados
+CREATE OR REPLACE FUNCTION root_has_role(roles root_role[])
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.root_admins
+    WHERE id = auth.uid() AND is_active = TRUE AND role = ANY(roles)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ---- RLS para root_admins ----
+ALTER TABLE public.root_admins ENABLE ROW LEVEL SECURITY;
+
+-- Qualquer operador root ativo pode visualizar a equipe
+CREATE POLICY "Equipe root pode ver os membros" ON public.root_admins
+    FOR SELECT USING (is_root_admin());
+
+-- Somente o root (is_root = TRUE) pode criar/editar/remover operadores
+CREATE POLICY "Somente o dono pode gerenciar operadores" ON public.root_admins
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.root_admins
+            WHERE id = auth.uid() AND is_root = TRUE AND is_active = TRUE
+        )
+    );
+
+-- ---- Patch nas políticas de assinaturas ----
+-- Substitui as políticas genéricas por políticas root-aware
+
+DROP POLICY IF EXISTS "Admins autenticados podem ver assinaturas"      ON public.assinaturas;
+DROP POLICY IF EXISTS "Admins autenticados podem atualizar assinaturas" ON public.assinaturas;
+
+CREATE POLICY "Root admins podem ver assinaturas" ON public.assinaturas
+    FOR SELECT USING (is_root_admin());
+
+CREATE POLICY "Root admins podem atualizar assinaturas" ON public.assinaturas
+    FOR UPDATE USING (is_root_admin());
+
+-- Vincula a assinatura à escola quando root provisiona o cliente
+ALTER TABLE public.assinaturas
+    ADD COLUMN IF NOT EXISTS escola_id UUID REFERENCES public.escolas(id);
+
+
+-- Correção policy
+
+-- 1. Remover policies antigas (evita conflito)
+DROP POLICY IF EXISTS "Equipe root pode ver os membros" ON public.root_admins;
+DROP POLICY IF EXISTS "Somente o dono pode gerenciar operadores" ON public.root_admins;
+
+DROP POLICY IF EXISTS "Root admins podem ver assinaturas" ON public.assinaturas;
+DROP POLICY IF EXISTS "Root admins podem atualizar assinaturas" ON public.assinaturas;
+
+-- 2. Criar função segura (sem RLS)
+CREATE OR REPLACE FUNCTION public.is_root_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.root_admins
+    WHERE id = auth.uid()
+      AND is_root = TRUE
+      AND is_active = TRUE
+  );
+$$;
+
+-- (Opcional, mas recomendado)
+REVOKE ALL ON FUNCTION public.is_root_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_root_admin() TO authenticated;
+
+-- 3. Garantir que RLS está ativo
+ALTER TABLE public.root_admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assinaturas ENABLE ROW LEVEL SECURITY;
+
+-- 4. Criar policies corrigidas para root_admins
+
+-- SELECT
+CREATE POLICY "Equipe root pode ver os membros"
+ON public.root_admins
+FOR SELECT
+USING (public.is_root_admin());
+
+-- INSERT, UPDATE, DELETE
+CREATE POLICY "Somente o dono pode gerenciar operadores"
+ON public.root_admins
+FOR ALL
+USING (public.is_root_admin())
+WITH CHECK (public.is_root_admin());
+
+-- 5. Policies para assinaturas
+
+CREATE POLICY "Root admins podem ver assinaturas"
+ON public.assinaturas
+FOR SELECT
+USING (public.is_root_admin());
+
+CREATE POLICY "Root admins podem atualizar assinaturas"
+ON public.assinaturas
+FOR UPDATE
+USING (public.is_root_admin())
+WITH CHECK (public.is_root_admin());

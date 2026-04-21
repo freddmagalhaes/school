@@ -182,3 +182,29 @@
     border-right-color: var(--border);
   }
 }
+
+/* ============================================================
+   Animações do painel Root / Notificações
+   ============================================================ */
+
+/* Giro suave da campainha quando há notificações não lidas */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15%       { transform: rotate(10deg); }
+  35%       { transform: rotate(-8deg); }
+  55%       { transform: rotate(6deg); }
+  75%       { transform: rotate(-4deg); }
+}
+
+/* Dropdown das notificações: desliza suavemente para baixo */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

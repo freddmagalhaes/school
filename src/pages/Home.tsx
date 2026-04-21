@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {
+import { Sun, Moon,
   GraduationCap,
   ArrowRight,
   BookOpen,
@@ -15,6 +15,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 // ============================================================
 // Definição dos planos de assinatura
@@ -89,12 +90,13 @@ const planos = [
 // ============================================================
 export const Home: React.FC = () => {
   const [ciclo, setCiclo] = useState<'mensal' | 'anual'>('mensal');
+  const { isDark, toggleTema } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans transition-colors duration-300">
 
       {/* ===== NAVBAR ===== */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -102,27 +104,37 @@ export const Home: React.FC = () => {
               <div className="bg-indigo-600 p-2 rounded-lg shadow">
                 <GraduationCap className="text-white h-6 w-6" />
               </div>
-              <span className="font-bold text-xl text-gray-900 tracking-tight">
+              <span className="font-bold text-xl text-gray-900 dark:text-white tracking-tight">
                 EduGestão <span className="text-indigo-600">Pro</span>
               </span>
             </div>
 
             {/* Nav Links */}
             <nav className="hidden md:flex gap-8">
-              <a href="#funcionalidades" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+              <a href="#funcionalidades" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 Funcionalidades
               </a>
-              <a href="#planos" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+              <a href="#planos" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 Planos
               </a>
-              <Link to="/contato" className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors">
+              <Link to="/contato" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 Contato
               </Link>
             </nav>
 
-            {/* CTAs */}
+            {/* CTAs + Toggle de tema */}
             <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+              {/* Botão Dark/Light */}
+              <button
+                id="btn-toggle-tema"
+                onClick={toggleTema}
+                aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+              >
+                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+
+              <Link to="/login" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors">
                 Entrar
               </Link>
               <Link

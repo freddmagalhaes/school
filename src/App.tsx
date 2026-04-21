@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { AppShell } from './components/AppShell';
 import { DashboardResumo } from './features/Dashboard/DashboardResumo';
 import { RHDashboard } from './features/Secretaria/RHDashboard';
@@ -11,9 +12,21 @@ import { Login } from './pages/Login';
 import { Contato } from './pages/Contato';
 import { Checkout } from './pages/Checkout';
 
-// Mocks rápidos pras telas que ainda vamos codar no futuro, só pra navegação não quebrar rs
-const Academico = () => <div className="p-6">Módulo Acadêmico e Diário de Classe (Em Construção)</div>;
-const Configuracoes = () => <div className="p-6">Configurações (Em Construção)</div>;
+// ---- Painel Root (BackOffice) ----
+import { RootAuthProvider } from './contexts/RootAuthContext';
+import { RootProtectedRoute } from './root/layout/RootProtectedRoute';
+import { RootShell } from './root/layout/RootShell';
+import { RootLogin } from './root/pages/RootLogin';
+import { RootDashboard } from './root/pages/RootDashboard';
+import { ClientesRoot } from './root/pages/ClientesRoot';
+import { ClienteDetalhe } from './root/pages/ClienteDetalhe';
+import { FinanceiroRoot } from './root/pages/FinanceiroRoot';
+import { EquipeRoot } from './root/pages/EquipeRoot';
+import { ConfiguracoesRoot } from './root/pages/ConfiguracoesRoot';
+
+// Stubs para módulos em construção
+const Academico    = () => <div className="p-6 text-gray-500">Módulo Acadêmico — Em Construção</div>;
+const Configuracoes = () => <div className="p-6 text-gray-500">Configurações — Em Construção</div>;
 
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
@@ -27,23 +40,52 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 export const App = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/contato" element={<Contato />} />
-          <Route path="/assinar" element={<Checkout />} />
-          
-          <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
-            <Route index element={<DashboardResumo />} />
-            <Route path="enturmacao" element={<AlunosEnturmacao />} />
-            <Route path="rh" element={<RHDashboard />} />
-            <Route path="academico" element={<Academico />} />
-            <Route path="financeiro" element={<FinanceiroDashboard />} />
-            <Route path="configuracoes" element={<Configuracoes />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
+      {/*
+       * ThemeProvider envolve o site púublico e o sistema dos clientes.
+       * O BackOffice (/ops) tem design dark fixo e NÃO herda este tema.
+       */}
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/contato" element={<Contato />} />
+            <Route path="/assinar" element={<Checkout />} />
+
+            <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+              <Route index element={<DashboardResumo />} />
+              <Route path="enturmacao" element={<AlunosEnturmacao />} />
+              <Route path="rh" element={<RHDashboard />} />
+              <Route path="academico" element={<Academico />} />
+              <Route path="financeiro" element={<FinanceiroDashboard />} />
+              <Route path="configuracoes" element={<Configuracoes />} />
+            </Route>
+
+            {/*
+             * =====================================================
+             * PAINEL ROOT — BACKOFFICE (rota oculta: /ops)
+             * NÃO há nenhum link público apontando para esta rota.
+             * Acesso exclusivo para operadores cadastrados em root_admins.
+             * Design SEMPRE dark — isolado do ThemeProvider.
+             * =====================================================
+             */}
+            <Route path="/ops" element={<RootAuthProvider><Outlet /></RootAuthProvider>}>
+              <Route path="login" element={<RootLogin />} />
+              <Route element={<RootProtectedRoute />}>
+                <Route element={<RootShell />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard"    element={<RootDashboard />} />
+                  <Route path="clientes"     element={<ClientesRoot />} />
+                  <Route path="clientes/:id" element={<ClienteDetalhe />} />
+                  <Route path="financeiro"   element={<FinanceiroRoot />} />
+                  <Route path="equipe"       element={<EquipeRoot />} />
+                  <Route path="configuracoes" element={<ConfiguracoesRoot />} />
+                </Route>
+              </Route>
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };
