@@ -191,3 +191,69 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER on_matricula_status_change
 AFTER UPDATE OF status ON public.matriculas
 FOR EACH ROW EXECUTE FUNCTION archive_notas_on_student_leave();
+
+-- ==========================================
+-- 4. Tabela de Assinaturas (Leads do Site)
+-- ==========================================
+-- Guarda todos os contatos que concluíram o checkout no site público.
+-- Não exige autenticação para INSERT (qualquer visitante pode assinar),
+-- mas o SELECT é restrito a usuários autenticados com papel Admin.
+
+CREATE TYPE assinatura_plano   AS ENUM ('basico', 'profissional', 'enterprise');
+CREATE TYPE assinatura_ciclo   AS ENUM ('mensal', 'anual');
+CREATE TYPE assinatura_metodo  AS ENUM ('pix', 'cartao', 'boleto');
+CREATE TYPE assinatura_status  AS ENUM ('pendente', 'ativo', 'cancelado', 'inadimplente');
+
+CREATE TABLE public.assinaturas (
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- Dados do contato/responsável
+    nome          VARCHAR(255) NOT NULL,
+    email         VARCHAR(255) NOT NULL,
+    documento     VARCHAR(20),            -- CPF ou CNPJ
+    telefone      VARCHAR(20),
+    nome_escola   VARCHAR(255) NOT NULL,
+
+    -- Dados da assinatura
+    plano         assinatura_plano  NOT NULL,
+    ciclo         assinatura_ciclo  NOT NULL,
+    metodo_pgto   assinatura_metodo NOT NULL,
+    valor_total   DECIMAL(10,2)     NOT NULL,
+
+    -- Controle operacional
+    status        assinatura_status NOT NULL DEFAULT 'pendente',
+    observacoes   TEXT,                    -- campo livre para anotações manuais
+
+    -- Timestamps
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Atualiza updated_at automaticamente a cada UPDATE
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_assinaturas_updated_at
+BEFORE UPDATE ON public.assinaturas
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ---- RLS ----
+ALTER TABLE public.assinaturas ENABLE ROW LEVEL SECURITY;
+
+-- Qualquer pessoa (anon) pode INSERIR — necessário para o checkout público funcionar sem login
+CREATE POLICY "Checkout público pode inserir assinaturas" ON public.assinaturas
+    FOR INSERT WITH CHECK (true);
+
+-- Apenas usuários autenticados (futuros Admins do painel) podem LER as assinaturas
+CREATE POLICY "Admins autenticados podem ver assinaturas" ON public.assinaturas
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Apenas usuários autenticados podem ATUALIZAR (ex: mudar status de pendente → ativo)
+CREATE POLICY "Admins autenticados podem atualizar assinaturas" ON public.assinaturas
+    FOR UPDATE USING (auth.role() = 'authenticated');
+

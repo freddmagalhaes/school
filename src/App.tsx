@@ -8,6 +8,8 @@ import { AlunosEnturmacao } from './features/Secretaria/AlunosEnturmacao';
 import { FinanceiroDashboard } from './features/Financeiro/FinanceiroDashboard';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
+import { Contato } from './pages/Contato';
+import { Checkout } from './pages/Checkout';
 
 // Mocks rápidos pras telas que ainda vamos codar no futuro, só pra navegação não quebrar rs
 const Academico = () => <div className="p-6">Módulo Acadêmico e Diário de Classe (Em Construção)</div>;
@@ -29,6 +31,8 @@ export const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/contato" element={<Contato />} />
+          <Route path="/assinar" element={<Checkout />} />
           
           <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
             <Route index element={<DashboardResumo />} />
