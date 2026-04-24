@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { GraduationCap, Phone, Mail, Clock, MessageSquare, Send, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Phone, Mail, Clock, MessageSquare, Send, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 // ============================================================
 // Página de Contato
@@ -8,16 +9,36 @@ import { Link } from 'react-router-dom';
 export const Contato: React.FC = () => {
   const [form, setForm] = useState({ nome: '', email: '', mensagem: '' });
   const [enviado, setEnviado] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
-  // Abre o cliente de e-mail com os dados do formulário pré-preenchidos
-  const handleSubmit = (e: React.FormEvent) => {
+  // Salva a mensagem diretamente no banco de dados do Supabase
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const assunto = encodeURIComponent(`Contato via site - ${form.nome}`);
-    const corpo = encodeURIComponent(
-      `Nome: ${form.nome}\nE-mail: ${form.email}\n\nMensagem:\n${form.mensagem}`
-    );
-    window.location.href = `mailto:atendimento@automocoes.tec.br?subject=${assunto}&body=${corpo}`;
-    setEnviado(true);
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      const { error } = await supabase
+        .from('contatos')
+        .insert([
+          { 
+            nome: form.nome, 
+            email: form.email, 
+            mensagem: form.mensagem 
+          }
+        ]);
+
+      if (error) throw error;
+
+      setEnviado(true);
+      setForm({ nome: '', email: '', mensagem: '' });
+    } catch (err: any) {
+      console.error('Erro ao enviar contato:', err);
+      setErro('Não foi possível enviar sua mensagem agora. Por favor, tente o WhatsApp.');
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
@@ -72,7 +93,7 @@ export const Contato: React.FC = () => {
               {/* WhatsApp */}
               <a
                 id="card-whatsapp"
-                href="https://wa.me/5531989805397"
+                href={`https://wa.me/${import.meta.env.VITE_CONTACT_PHONE || '5531989805397'}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-start gap-5 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
@@ -92,7 +113,7 @@ export const Contato: React.FC = () => {
               {/* E-mail */}
               <a
                 id="card-email"
-                href="mailto:atendimento@automocoes.tec.br"
+                href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'atendimento@automacao.tec.br'}`}
                 className="group flex items-start gap-5 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
               >
                 <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
@@ -100,7 +121,7 @@ export const Contato: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 text-lg">E-mail</h3>
-                  <p className="text-indigo-600 font-semibold">atendimento@automocoes.tec.br</p>
+                  <p className="text-indigo-600 font-semibold">{import.meta.env.VITE_CONTACT_EMAIL || 'atendimento@automacao.tec.br'}</p>
                   <p className="text-gray-500 text-sm mt-1">
                     Respondemos em até 1 dia útil.
                   </p>
@@ -130,8 +151,7 @@ export const Contato: React.FC = () => {
                   <CheckCircle2 size={56} className="text-emerald-500 mb-4" />
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">Mensagem enviada!</h3>
                   <p className="text-gray-500">
-                    Seu cliente de e-mail foi aberto com a mensagem pré-preenchida.
-                    Retornaremos em breve!
+                    Obrigado pelo contato! Nossa equipe analisará sua mensagem e retornará em breve no seu e-mail.
                   </p>
                   <button
                     onClick={() => setEnviado(false)}
@@ -144,6 +164,13 @@ export const Contato: React.FC = () => {
                 <>
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Envie uma mensagem</h2>
                   <form id="form-contato" onSubmit={handleSubmit} className="flex flex-col gap-5">
+                    
+                    {erro && (
+                      <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm">
+                        {erro}
+                      </div>
+                    )}
+
                     {/* Nome */}
                     <div>
                       <label htmlFor="nome" className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -153,10 +180,11 @@ export const Contato: React.FC = () => {
                         id="nome"
                         type="text"
                         required
+                        disabled={carregando}
                         value={form.nome}
                         onChange={(e) => setForm({ ...form, nome: e.target.value })}
                         placeholder="Seu nome"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all disabled:opacity-50"
                       />
                     </div>
 
@@ -169,10 +197,11 @@ export const Contato: React.FC = () => {
                         id="email-contato"
                         type="email"
                         required
+                        disabled={carregando}
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
                         placeholder="seu@email.com"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all disabled:opacity-50"
                       />
                     </div>
 
@@ -184,11 +213,12 @@ export const Contato: React.FC = () => {
                       <textarea
                         id="mensagem"
                         required
+                        disabled={carregando}
                         rows={5}
                         value={form.mensagem}
                         onChange={(e) => setForm({ ...form, mensagem: e.target.value })}
                         placeholder="Descreva sua dúvida ou necessidade..."
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all resize-none"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder-gray-400 text-sm transition-all resize-none disabled:opacity-50"
                       />
                     </div>
 
@@ -196,14 +226,24 @@ export const Contato: React.FC = () => {
                     <button
                       id="btn-enviar-contato"
                       type="submit"
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                      disabled={carregando}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:bg-indigo-400"
                     >
-                      <Send size={16} />
-                      Enviar Mensagem
+                      {carregando ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          Enviar Mensagem
+                        </>
+                      )}
                     </button>
 
                     <p className="text-xs text-gray-400 text-center">
-                      Ao enviar, seu cliente de e-mail abrirá com a mensagem pré-preenchida.
+                      Sua mensagem será enviada com segurança para nossa equipe de atendimento.
                     </p>
                   </form>
                 </>

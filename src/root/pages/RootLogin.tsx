@@ -23,51 +23,52 @@ export const RootLogin = () => {
     setErro(null);
 
     try {
-      // 1. Autentica no Supabase Auth
-      const { data: { session }, error: authError } = await supabase.auth.signInWithPassword({
+      // Começando o processo de login...
+      
+      // 1. Tenta autenticar o usuário no sistema de Auth do Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       });
 
-      if (authError || !session) {
-        // Mostra o erro real do Supabase para facilitar o diagnóstico
+      // Se der erro no e-mail ou senha, a gente avisa o usuário
+      if (authError || !data.session) {
         const msg = authError?.message || 'Erro desconhecido';
 
-        if (msg.includes('Email not confirmed') || msg.includes('email_not_confirmed')) {
-          setErro(
-            'E-mail não confirmado. Acesse o painel do Supabase → Authentication → Users, ' +
-            'clique no usuário e selecione "Send confirmation email" ou confirme manualmente.'
-          );
-        } else if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-          setErro('E-mail ou senha incorretos. Verifique as credenciais e tente novamente.');
+        if (msg.includes('Email not confirmed')) {
+          setErro('Opa! Parece que esse e-mail ainda não foi confirmado no banco de dados.');
+        } else if (msg.includes('Invalid login credentials')) {
+          setErro('E-mail ou senha não conferem. Dá uma conferida e tenta de novo!');
         } else {
-          // Mostra o erro bruto do Supabase — útil para diagnóstico em dev
-          setErro(`Erro de autenticação: ${msg}`);
+          setErro(`Tivemos um problema técnico: ${msg}`);
         }
         return;
       }
 
-      // 2. Valida se esse usuário existe na tabela root_admins e está ativo
+      // 2. Se o login deu certo, agora a gente checa se ele é um administrador autorizado
+      // Isso é importante pra ninguém comum entrar na área de gestão do sistema
       const { data: operador, error: rootError } = await supabase
         .from('root_admins')
         .select('id, is_active')
-        .eq('id', session.user.id)
+        .eq('id', data.session.user.id)
         .single();
 
+      // Se ele não estiver na tabela de admins ou estiver inativo, barramos o acesso
       if (rootError || !operador || !operador.is_active) {
-        // Usuário existe no Auth mas NÃO é root — desconectar e negar acesso
         await supabase.auth.signOut();
-        const detalhe = rootError?.message || 'Usuário não encontrado na tabela root_admins.';
-        setErro(`Acesso negado: ${detalhe} — Verifique se o INSERT na tabela root_admins foi executado.`);
+        setErro('Acesso negado: Você não tem permissão de administrador ou seu acesso está desativado.');
         return;
       }
 
-      // 3. Acesso liberado → redireciona para o dashboard
+      // Se chegou aqui, tá tudo certo! Levamos o admin para o painel de controle
       navigate('/ops/dashboard', { replace: true });
 
     } catch (err) {
-      setErro(`Erro inesperado: ${String(err)}`);
+      // Esse catch pega erros inesperados, tipo falta de internet
+      setErro('Ih, tivemos um erro inesperado. Tenta atualizar a página!');
+      console.error('Erro no login:', err);
     } finally {
+      // Terminando o carregamento, independente se deu certo ou errado
       setCarregando(false);
     }
   };

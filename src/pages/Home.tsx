@@ -438,7 +438,7 @@ export const Home: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <a
-              href="https://wa.me/5531989805397"
+              href={`https://wa.me/${import.meta.env.VITE_CONTACT_PHONE || '5531989805397'}`}
               target="_blank"
               rel="noopener noreferrer"
               id="btn-whatsapp"
@@ -448,12 +448,12 @@ export const Home: React.FC = () => {
               WhatsApp: (31) 98980-5397
             </a>
             <a
-              href="mailto:atendimento@automocoes.tec.br"
+              href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'atendimento@automacao.tec.br'}`}
               id="btn-email"
               className="flex items-center justify-center gap-2 border border-indigo-400/50 hover:bg-white/10 text-white px-8 py-3.5 rounded-full font-semibold transition-all"
             >
               <Mail size={18} />
-              atendimento@automocoes.tec.br
+              {import.meta.env.VITE_CONTACT_EMAIL || 'atendimento@automacao.tec.br'}
             </a>
           </div>
           <div className="mt-8">
