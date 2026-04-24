@@ -10,8 +10,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Atenção: As chaves do Supabase não foram encontradas no arquivo .env');
 }
 
-// Criando a conexão única com o banco de dados que vai ser usada no resto do site
+// Criando a conexão única com o banco de dados
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      storageKey: 'edugestao-backoffice-auth', // Chave única para evitar conflito de travas
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  }
 );
