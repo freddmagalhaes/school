@@ -28,3 +28,4 @@ dist-ssr
 .ssh/
 .env*
 !.env.example
+supabase/schema.sql
