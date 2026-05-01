@@ -276,7 +276,7 @@ export const EquipeRoot = () => {
                         <select
                           value={op.role}
                           onChange={(e) => mudarRole(op, e.target.value as RootRole)}
-                          className="bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] text-gray-600 dark:text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-400/40 transition-colors"
+                          className="bg-white dark:bg-[#141c2e] border border-gray-200 dark:border-[#1e2d4a] text-gray-800 dark:text-gray-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-400/40 transition-colors appearance-none"
                         >
                           {ROLES_DISPONIVEIS.map((r) => (
                             <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>
@@ -408,7 +408,7 @@ export const EquipeRoot = () => {
                 <select
                   value={novoOp.role}
                   onChange={(e) => setNovoOp({ ...novoOp, role: e.target.value as RootRole })}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-[#141c2e] border border-gray-200 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-800 dark:text-gray-300 focus:outline-none focus:border-amber-400/40 transition-all appearance-none"
                 >
                   {ROLES_DISPONIVEIS.map((r) => (
                     <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>

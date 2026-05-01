@@ -53,7 +53,7 @@ export const RHDashboard: React.FC = () => {
             <select 
               value={filtroVinculo}
               onChange={(e) => setFiltroVinculo(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:flex-none"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:flex-none appearance-none"
             >
               <option value="Todos">Todos os Vínculos</option>
               <option value="Efetivo">Efetivos</option>

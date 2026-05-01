@@ -285,7 +285,7 @@ export const Configuracoes: React.FC = () => {
                   value={formatoAvaliacao}
                   onChange={e => setFormatoAvaliacao(e.target.value)}
                   disabled={!podeEditar}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 appearance-none"
                 >
                   <option value="Bimestral">Bimestral (4 Etapas)</option>
                   <option value="Trimestral">Trimestral (3 Etapas)</option>

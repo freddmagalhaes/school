@@ -155,7 +155,7 @@ export const ClientesRoot = () => {
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] text-gray-600 dark:text-gray-300 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400/40"
+            className="bg-white dark:bg-[#141c2e] border border-gray-200 dark:border-[#1e2d4a] text-gray-800 dark:text-gray-300 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400/40 appearance-none"
           >
             <option value="todos">Todos os status</option>
             <option value="ativo">Ativo</option>
@@ -169,7 +169,7 @@ export const ClientesRoot = () => {
         <select
           value={filtroPlano}
           onChange={(e) => setFiltroPlano(e.target.value)}
-          className="bg-gray-50 dark:bg-[#141c2e] border border-gray-100 dark:border-[#1e2d4a] text-gray-600 dark:text-gray-300 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400/40"
+          className="bg-white dark:bg-[#141c2e] border border-gray-200 dark:border-[#1e2d4a] text-gray-800 dark:text-gray-300 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400/40 appearance-none"
         >
           <option value="todos">Todos os planos</option>
           <option value="basico">Básico</option>

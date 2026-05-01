@@ -24,8 +24,7 @@ import { FinanceiroRoot } from './root/pages/FinanceiroRoot';
 import { EquipeRoot } from './root/pages/EquipeRoot';
 import { ConfiguracoesRoot } from './root/pages/ConfiguracoesRoot';
 
-// Stubs para módulos em construção
-const Academico    = () => <div className="p-6 text-gray-500">Módulo Acadêmico — Em Construção</div>;
+import { AcademicoDashboard } from './features/Academico/AcademicoDashboard';
 
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
@@ -55,7 +54,7 @@ export const App = () => {
               <Route index element={<DashboardResumo />} />
               <Route path="enturmacao" element={<AlunosEnturmacao />} />
               <Route path="rh" element={<RHDashboard />} />
-              <Route path="academico" element={<Academico />} />
+              <Route path="academico" element={<AcademicoDashboard />} />
               <Route path="financeiro" element={<FinanceiroDashboard />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
