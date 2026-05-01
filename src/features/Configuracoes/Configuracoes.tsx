@@ -9,7 +9,7 @@ import {
 type Tab = 'dados' | 'acessos' | 'preferencias';
 
 export const Configuracoes: React.FC = () => {
-  const { escolaAtiva } = useAuth();
+  const { escolaAtiva, isSystemRoot } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('dados');
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -26,7 +26,7 @@ export const Configuracoes: React.FC = () => {
   // Verificação de Acesso (Level Access)
   // O AppShell já restringe a rota para 'Admin', mas por precaução e para mostrar o "level access":
   const isAdmin = escolaAtiva?.papel === 'Admin';
-  const podeEditar = isAdmin; // Se futuramente Diretor acessar, podemos fazer 'isAdmin || isDiretor'
+  const podeEditar = isAdmin || isSystemRoot; 
 
   const [usuariosAcesso, setUsuariosAcesso] = useState<any[]>([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);

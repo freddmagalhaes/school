@@ -26,6 +26,7 @@ interface AuthContextType {
   user: User | null;
   membros: MembroEscola[];
   escolaAtiva: MembroEscola | null;
+  isSystemRoot: boolean;
   setEscolaAtiva: (membro: MembroEscola) => void;
   loading: boolean;
   signOut: () => Promise<void>;
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [membros, setMembros] = useState<MembroEscola[]>([]);
   const [escolaAtiva, setEscolaAtiva] = useState<MembroEscola | null>(null);
+  const [isSystemRoot, setIsSystemRoot] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,10 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
+          checkSystemRoot(session.user.id);
           fetchMembros(session.user.id);
         } else {
           setMembros([]);
           setEscolaAtiva(null);
+          setIsSystemRoot(false);
           setLoading(false);
         }
       }
@@ -58,6 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        checkSystemRoot(session.user.id);
         fetchMembros(session.user.id);
       } else {
         setLoading(false);
@@ -68,6 +73,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const checkSystemRoot = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('root_admins')
+        .select('is_root, role')
+        .eq('id', userId)
+        .eq('is_active', true)
+        .single();
+      
+      if (data && (data.is_root || data.role === 'root' || data.role === 'super_admin')) {
+        setIsSystemRoot(true);
+      } else {
+        setIsSystemRoot(false);
+      }
+    } catch (e) {
+      setIsSystemRoot(false);
+    }
+  };
 
   const fetchMembros = async (userId: string) => {
     try {
@@ -113,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('escola_ativa_id');
+    setIsSystemRoot(false);
   };
 
   return (
@@ -120,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user,
       membros,
       escolaAtiva,
+      isSystemRoot,
       setEscolaAtiva: handleSetEscolaAtiva,
       loading,
       signOut
