@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Database, Globe, Shield, Info, Save, AlertTriangle } from 'lucide-react';
+import { Settings, Shield, Save, AlertTriangle, Info } from 'lucide-react';
 import { useRootAuth } from '../../contexts/RootAuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -11,7 +11,7 @@ interface SystemSettings {
 }
 
 export const ConfiguracoesRoot = () => {
-  const { isRoot, operador } = useRootAuth();
+  const { isRoot } = useRootAuth();
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

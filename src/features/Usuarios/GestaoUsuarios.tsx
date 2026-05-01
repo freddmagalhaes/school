@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useAuth, PAPEIS_GESTAO } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import type { PerfilPapel } from '../../contexts/AuthContext';
 import { useEscolaAtual } from '../../hooks/useEscolaAtual';
 import { RootEscolaSelector } from '../../components/RootEscolaSelector';
 import {
-  UsersRound, Plus, Search, Edit2, UserX, UserCheck, Shield, Mail, User
+  UsersRound, Plus, Search, UserX, Shield, Mail, User
 } from 'lucide-react';
 
 type VinculoTipo = 'Efetivo' | 'Designado';
@@ -52,6 +52,7 @@ export const GestaoUsuarios: React.FC = () => {
   const [filtroPapel, setFiltroPapel] = useState<string>('Todos');
 
   const [showModal, setShowModal] = useState(false);
+  const [editingMembro, setEditingMembro] = useState<MembroLista | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackTipo, setFeedbackTipo] = useState<'ok' | 'erro'>('ok');
@@ -104,11 +105,66 @@ export const GestaoUsuarios: React.FC = () => {
       setFeedbackTipo('ok');
       setFeedback(`Usuário "${form.nome}" criado! Um e-mail de acesso foi enviado para ${form.email}.`);
       setShowModal(false);
+      setEditingMembro(null);
       setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
       carregarMembros();
     } catch (err: any) {
       setFeedbackTipo('erro');
       setFeedback(err.message || 'Erro ao criar usuário. Tente novamente.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const abrirModalCriarUsuario = () => {
+    setEditingMembro(null);
+    setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+    setFeedback('');
+    setShowModal(true);
+  };
+
+  const abrirModalEditarUsuario = (membro: MembroLista) => {
+    setEditingMembro(membro);
+    setForm({
+      nome: membro.perfis?.nome || '',
+      email: '',
+      cpf: membro.perfis?.cpf || '',
+      papel: membro.papel,
+      tipo_vinculo: membro.tipo_vinculo,
+    });
+    setFeedback('');
+    setShowModal(true);
+  };
+
+  const handleSalvarUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!escolaId) return;
+    setSalvando(true);
+    setFeedback('');
+
+    try {
+      if (editingMembro) {
+        const { error } = await supabase
+          .from('membros_escola')
+          .update({ papel: form.papel, tipo_vinculo: form.tipo_vinculo })
+          .eq('id', editingMembro.id);
+
+        if (error) throw error;
+
+        setFeedbackTipo('ok');
+        setFeedback(`Acesso de ${form.nome} atualizado com sucesso.`);
+      } else {
+        await handleCriarUsuario(e);
+        return;
+      }
+
+      setShowModal(false);
+      setEditingMembro(null);
+      setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+      carregarMembros();
+    } catch (err: any) {
+      setFeedbackTipo('erro');
+      setFeedback(err.message || 'Erro ao salvar usuário.');
     } finally {
       setSalvando(false);
     }
@@ -185,7 +241,7 @@ export const GestaoUsuarios: React.FC = () => {
               </select>
             </div>
             <button
-              onClick={() => { setShowModal(true); setFeedback(''); }}
+              onClick={abrirModalCriarUsuario}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm transition-colors"
             >
               <Plus size={18} /> Novo Usuário
@@ -232,7 +288,14 @@ export const GestaoUsuarios: React.FC = () => {
                         </td>
                         <td className="px-5 py-3.5 text-gray-600">{m.tipo_vinculo}</td>
                         {podeGerenciarGestao && (
-                          <td className="px-5 py-3.5 text-right">
+                          <td className="px-5 py-3.5 text-right space-x-1">
+                            <button
+                              onClick={() => abrirModalEditarUsuario(m)}
+                              title="Editar usuário"
+                              className="text-gray-400 hover:text-indigo-700 transition-colors p-1.5 rounded-md hover:bg-indigo-50"
+                            >
+                              <Shield size={16} />
+                            </button>
                             <button
                               onClick={() => handleToggleAtivo(m)}
                               title="Remover acesso"
@@ -258,11 +321,11 @@ export const GestaoUsuarios: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-xl">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <h2 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                <Shield size={20} className="text-indigo-600" /> Novo Usuário
+                <Shield size={20} className="text-indigo-600" /> {editingMembro ? 'Editar Usuário' : 'Novo Usuário'}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
             </div>
-            <form onSubmit={handleCriarUsuario} className="p-6 space-y-4">
+            <form onSubmit={handleSalvarUsuario} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Nome Completo *</label>
@@ -272,9 +335,10 @@ export const GestaoUsuarios: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">E-mail *</label>
-                  <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
-                    placeholder="email@escola.com" />
+                  <input required={!editingMembro} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                    disabled={!!editingMembro}
+                    className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder={editingMembro ? 'E-mail não disponível para edição' : 'email@escola.com'} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF</label>
@@ -307,7 +371,7 @@ export const GestaoUsuarios: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm">Cancelar</button>
                 <button type="submit" disabled={salvando} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm disabled:opacity-50">
-                  {salvando ? 'Criando...' : 'Criar Usuário'}
+                  {salvando ? (editingMembro ? 'Salvando...' : 'Criando...') : (editingMembro ? 'Salvar Alterações' : 'Criar Usuário')}
                 </button>
               </div>
             </form>

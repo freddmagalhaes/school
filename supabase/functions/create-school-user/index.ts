@@ -41,7 +41,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Sessão inválida' }), { status: 401, headers: corsHeaders });
     }
 
-    const { escola_id, nome, email, cpf, papel, tipo_vinculo } = await req.json();
+    const { escola_id, nome, email, cpf, papel, tipo_vinculo, metadata } = await req.json();
 
     if (!escola_id || !nome || !email || !papel) {
       return new Response(JSON.stringify({ error: 'Campos obrigatórios: escola_id, nome, email, papel' }), {
@@ -83,7 +83,7 @@ serve(async (req) => {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       email_confirm: true,   // E-mail confirmado automaticamente
-      user_metadata: { nome, cpf },
+      user_metadata: { nome, cpf, ...metadata },
       // Sem senha definida → Supabase enviará link de redefinição ao usuário
     });
 
@@ -98,7 +98,7 @@ serve(async (req) => {
     // Cria o perfil
     const { error: perfilError } = await supabaseAdmin
       .from('perfis')
-      .upsert({ id: newUserId, nome, cpf: cpf || null }, { onConflict: 'id' });
+      .upsert({ id: newUserId, nome, cpf: cpf || null, metadata: metadata || {} }, { onConflict: 'id' });
 
     if (perfilError) {
       // Rollback: deleta o usuário criado no Auth

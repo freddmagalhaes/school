@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { FileDown, Search, User } from 'lucide-react';
+import { FileDown, Search } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -9,7 +9,11 @@ interface Props { escolaId: string | null; }
 interface Turma { id: string; nome: string; ano_letivo: number; }
 interface Periodo { id: string; nome: string; ordem: number; }
 interface Aluno { id: string; nome: string; matricula_id: string; }
-interface NotaAluno { disciplina_nome: string; [periodo_id: string]: string | number; media?: number; situacao?: string; }
+interface NotaAluno extends Record<string, string | number | undefined> {
+  disciplina_nome: string;
+  media?: number;
+  situacao?: string;
+}
 
 const calcularMedia = (notas: number[]): number => {
   if (notas.length === 0) return 0;

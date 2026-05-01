@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell';
 import { DashboardResumo } from './features/Dashboard/DashboardResumo';
 import { RHDashboard } from './features/Secretaria/RHDashboard';
 import { AlunosEnturmacao } from './features/Secretaria/AlunosEnturmacao';
+import { CadastroAlunos } from './features/Secretaria/CadastroAlunos';
 import { FinanceiroDashboard } from './features/Financeiro/FinanceiroDashboard';
 import { Login } from './pages/Login';
 import { EsqueciSenha } from './pages/EsqueciSenha';
@@ -55,6 +56,7 @@ export const App = () => {
             <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<DashboardResumo />} />
               <Route path="enturmacao"   element={<AlunosEnturmacao />} />
+              <Route path="cadastro-alunos" element={<CadastroAlunos />} />
               <Route path="rh"           element={<RHDashboard />} />
               <Route path="academico"    element={<AcademicoDashboard />} />
               <Route path="relatorios"   element={<RelatoriosDashboard />} />

@@ -1,15 +1,16 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { SchoolSelector } from './SchoolSelector';
 import { 
-  GraduationCap, Users, UserCog, PiggyBank, 
-  Settings, LogOut, LayoutDashboard, UsersRound, BarChart3
+  GraduationCap, Users, UserPlus, UserCog, PiggyBank, 
+  Settings, LogOut, LayoutDashboard, UsersRound, BarChart3, ShieldCheck
 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
-  const { escolaAtiva, isSystemRoot, user, signOut } = useAuth();
+  const { escolaAtiva, isSystemRoot, user, signOut, membros, loading } = useAuth();
   const papel = escolaAtiva?.papel;
+  const podeSelecionarEscola = membros.length > 1;
 
   // Hierarquia de acesso:
   // Root       → tudo, sem restrição
@@ -28,6 +29,12 @@ export const AppShell: React.FC = () => {
       name: 'Enturmação',
       icon: Users,
       path: '/app/enturmacao',
+      roles: ['Admin', 'Secretaria'],
+    },
+    {
+      name: 'Cadastro de Alunos',
+      icon: UserPlus,
+      path: '/app/cadastro-alunos',
       roles: ['Admin', 'Secretaria'],
     },
     {
@@ -64,6 +71,12 @@ export const AppShell: React.FC = () => {
       name: 'Configurações',
       icon: Settings,
       path: '/app/configuracoes',
+      roles: ['Admin'],
+    },
+    {
+      name: 'Backoffice',
+      icon: ShieldCheck,
+      path: '/ops/dashboard',
       roles: ['Admin'],
     },
   ];
@@ -123,31 +136,60 @@ export const AppShell: React.FC = () => {
         {/* Top Header */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4">
-             {/* School Selector is usually better highlighted, but since it's a structural necessity, let's put it in the header for easy access */}
-             {escolaAtiva ? (
-               <div className="flex items-center gap-3">
-                 <div className="bg-indigo-600 rounded-lg p-1.5 shadow-sm">
-                   <SchoolSelector />
-                 </div>
-                 <div className="h-6 w-px bg-gray-300"></div>
-                 <div className="text-sm">
-                   <span className="text-gray-500">Perfil de </span>
-                   <span className="font-bold text-indigo-900">{escolaAtiva.papel}</span>
-                 </div>
-               </div>
-             ) : (
-               <div className="text-gray-500 text-sm">Carregando contexto...</div>
-             )}
-          </div>
+          {/* School Selector is usually better highlighted, but since it's a structural necessity, let's put it in the header for easy access */}
+          {loading ? (
+            <div className="text-gray-500 text-sm">Carregando contexto...</div>
+          ) : (
+            <div className="flex items-center gap-3">
+              {podeSelecionarEscola && (
+                <div className="bg-indigo-600 rounded-lg p-1.5 shadow-sm">
+                  <SchoolSelector />
+                </div>
+              )}
+
+              {escolaAtiva ? (
+                <>
+                  <div className="h-6 w-px bg-gray-300" />
+                  <div className="text-sm">
+                    <span className="text-gray-500">Perfil de </span>
+                    <span className="font-bold text-indigo-900">{escolaAtiva.papel}</span>
+                  </div>
+                </>
+              ) : isSystemRoot ? (
+                <div className="rounded-3xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700 flex items-center gap-3">
+                  <ShieldCheck size={18} className="text-amber-500" />
+                  <div>
+                    <p className="font-semibold">Usuário Root ativo</p>
+                    <Link to="/ops/dashboard" className="text-amber-700 font-semibold underline">
+                      Ir para o Backoffice de Pagamentos e Clientes
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-3xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600">
+                  Nenhuma escola ativa selecionada. Selecione a escola no seletor quando disponível.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
           
           <div className="flex items-center gap-3">
-             <div className="text-right hidden sm:block">
-               <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-               <p className="text-xs text-gray-500">Logado</p>
-             </div>
-             <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
-               {user?.email?.charAt(0).toUpperCase() || 'U'}
-             </div>
+            {isSystemRoot && (
+              <Link
+                to="/ops/dashboard"
+                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-amber-400 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-600 hover:bg-amber-100 transition-colors"
+              >
+                <ShieldCheck size={14} /> Backoffice
+              </Link>
+            )}
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+              <p className="text-xs text-gray-500">Logado</p>
+            </div>
+            <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
           </div>
         </header>
 

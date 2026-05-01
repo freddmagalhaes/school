@@ -53,11 +53,20 @@ export const Configuracoes: React.FC = () => {
   // Estados Form: Dados da Instituição
   const [escolaNome, setEscolaNome] = useState(escolaAtiva?.escola.nome || '');
   const [escolaCnpj, setEscolaCnpj] = useState(escolaAtiva?.escola.cnpj || '');
-  const [escolaTelefone, setEscolaTelefone] = useState('(00) 0000-0000');
+  const [escolaTelefone, setEscolaTelefone] = useState('');
   
   // Estados Form: Preferências
   const [formatoAvaliacao, setFormatoAvaliacao] = useState('Bimestral');
   const [bloquearNotas, setBloquearNotas] = useState(false);
+
+  useEffect(() => {
+    if (!escolaAtiva) return;
+    setEscolaNome(escolaAtiva.escola.nome);
+    setEscolaCnpj(escolaAtiva.escola.cnpj);
+    setEscolaTelefone((escolaAtiva.escola as any).telefone || '');
+    setFormatoAvaliacao((escolaAtiva.escola as any).formato_avaliacao || 'Bimestral');
+    setBloquearNotas((escolaAtiva.escola as any).bloquear_notas || false);
+  }, [escolaAtiva]);
 
   // Estados: Períodos Letivos
   const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
@@ -73,6 +82,17 @@ export const Configuracoes: React.FC = () => {
 
   const [usuariosAcesso, setUsuariosAcesso] = useState<any[]>([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
+  const [showAcessoModal, setShowAcessoModal] = useState(false);
+  const [editingAcessoId, setEditingAcessoId] = useState<string | null>(null);
+  const [acessoError, setAcessoError] = useState('');
+  const [savingAcesso, setSavingAcesso] = useState(false);
+  const [acessoForm, setAcessoForm] = useState({
+    nome: '',
+    email: '',
+    cpf: '',
+    papel: 'Professor' as string,
+    tipo_vinculo: 'Efetivo' as string,
+  });
 
   useEffect(() => {
     if (activeTab === 'acessos' && escolaAtiva) {
@@ -84,11 +104,12 @@ export const Configuracoes: React.FC = () => {
   }, [activeTab, escolaAtiva, anoLetivoP]);
 
   const carregarUsuarios = async () => {
+    if (!escolaAtiva) return;
     setLoadingUsuarios(true);
     const { data, error } = await supabase
       .from('membros_escola')
       .select(`
-        id, papel,
+        id, papel, tipo_vinculo,
         perfil:perfis (nome, cpf)
       `)
       .eq('escola_id', escolaAtiva.escola_id);
@@ -97,6 +118,71 @@ export const Configuracoes: React.FC = () => {
       setUsuariosAcesso(data);
     }
     setLoadingUsuarios(false);
+  };
+
+  const abrirModalAcesso = (usuario?: any) => {
+    if (usuario) {
+      setEditingAcessoId(usuario.id);
+      setAcessoForm({
+        nome: usuario.perfil?.nome || '',
+        email: '',
+        cpf: usuario.perfil?.cpf || '',
+        papel: usuario.papel || 'Professor',
+        tipo_vinculo: usuario.tipo_vinculo || 'Efetivo',
+      });
+    } else {
+      setEditingAcessoId(null);
+      setAcessoForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+    }
+    setAcessoError('');
+    setShowAcessoModal(true);
+  };
+
+  const handleSalvarAcesso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!escolaAtiva) return;
+    setSavingAcesso(true);
+    setAcessoError('');
+
+    try {
+      if (editingAcessoId) {
+        const { error } = await supabase
+          .from('membros_escola')
+          .update({ papel: acessoForm.papel, tipo_vinculo: acessoForm.tipo_vinculo })
+          .eq('id', editingAcessoId);
+
+        if (error) throw error;
+        // Atualização concluída com sucesso.
+      } else {
+        const { data, error } = await supabase.functions.invoke('create-school-user', {
+          body: {
+            escola_id: escolaAtiva.escola_id,
+            nome: acessoForm.nome,
+            email: acessoForm.email,
+            cpf: acessoForm.cpf,
+            papel: acessoForm.papel,
+            tipo_vinculo: acessoForm.tipo_vinculo,
+          },
+        });
+
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.error);
+        // Convite enviado com sucesso.
+      }
+
+      carregarUsuarios();
+      setShowAcessoModal(false);
+    } catch (err: any) {
+      setAcessoError(err.message || 'Erro ao salvar acesso.');
+    } finally {
+      setSavingAcesso(false);
+    }
+  };
+
+  const handleRemoverAcesso = async (id: string) => {
+    if (!confirm('Deseja remover este acesso da escola?')) return;
+    await supabase.from('membros_escola').delete().eq('id', id);
+    carregarUsuarios();
   };
 
   const carregarPeriodos = async () => {
@@ -154,7 +240,13 @@ export const Configuracoes: React.FC = () => {
     
     const { error } = await supabase
       .from('escolas')
-      .update({ nome: escolaNome, cnpj: escolaCnpj })
+      .update({
+        nome: escolaNome,
+        cnpj: escolaCnpj,
+        telefone: escolaTelefone,
+        formato_avaliacao: formatoAvaliacao,
+        bloquear_notas: bloquearNotas,
+      })
       .eq('id', escolaAtiva.escola_id);
 
     if (error) {
@@ -305,7 +397,11 @@ export const Configuracoes: React.FC = () => {
                 <p className="text-sm text-gray-500">Gerencie quem pode acessar o sistema da sua escola.</p>
               </div>
               {podeEditar && (
-                <button className="bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => abrirModalAcesso()}
+                  className="bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
                   <UserPlus size={18} /> Convidar Usuário
                 </button>
               )}
@@ -364,14 +460,108 @@ export const Configuracoes: React.FC = () => {
                       </td>
                       {podeEditar && (
                         <td className="px-6 py-4 text-sm text-right">
-                          <button className="text-indigo-600 hover:text-indigo-900 font-medium mr-3">Editar Papel</button>
-                          <button className="text-red-600 hover:text-red-900 font-medium">Remover</button>
+                          <button
+                            type="button"
+                            onClick={() => abrirModalAcesso(user)}
+                            className="text-indigo-600 hover:text-indigo-900 font-medium mr-3"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverAcesso(user.id)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Remover
+                          </button>
                         </td>
                       )}
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Acesso modal */}
+        {showAcessoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">{editingAcessoId ? 'Editar Acesso' : 'Convidar Usuário'}</h2>
+                  <p className="text-sm text-gray-500">Adicione ou atualize um membro desta escola.</p>
+                </div>
+                <button type="button" onClick={() => setShowAcessoModal(false)} className="text-gray-500 hover:text-gray-700">Fechar</button>
+              </div>
+              <form onSubmit={handleSalvarAcesso} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nome completo</label>
+                  <input
+                    value={acessoForm.nome}
+                    onChange={(e) => setAcessoForm((prev) => ({ ...prev, nome: e.target.value }))}
+                    className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                {!editingAcessoId && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">E-mail</label>
+                      <input
+                        type="email"
+                        value={acessoForm.email}
+                        onChange={(e) => setAcessoForm((prev) => ({ ...prev, email: e.target.value }))}
+                        className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">CPF</label>
+                      <input
+                        value={acessoForm.cpf}
+                        onChange={(e) => setAcessoForm((prev) => ({ ...prev, cpf: e.target.value }))}
+                        className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Papel</label>
+                    <select
+                      value={acessoForm.papel}
+                      onChange={(e) => setAcessoForm((prev) => ({ ...prev, papel: e.target.value }))}
+                      className="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Admin">Admin</option>
+                      <option value="Diretor">Diretor</option>
+                      <option value="Subdiretor">Subdiretor</option>
+                      <option value="Secretaria">Secretaria</option>
+                      <option value="Professor">Professor</option>
+                      <option value="Aluno">Aluno</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Tipo de vínculo</label>
+                    <select
+                      value={acessoForm.tipo_vinculo}
+                      onChange={(e) => setAcessoForm((prev) => ({ ...prev, tipo_vinculo: e.target.value }))}
+                      className="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="Efetivo">Efetivo</option>
+                      <option value="Designado">Designado</option>
+                    </select>
+                  </div>
+                </div>
+                {acessoError && <p className="text-sm text-red-600">{acessoError}</p>}
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={() => setShowAcessoModal(false)} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+                  <button type="submit" disabled={savingAcesso} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300">{savingAcesso ? 'Salvando...' : 'Salvar'}</button>
+                </div>
+              </form>
             </div>
           </div>
         )}
