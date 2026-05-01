@@ -4,25 +4,75 @@ import { useAuth } from '../contexts/AuthContext';
 import { SchoolSelector } from './SchoolSelector';
 import { 
   GraduationCap, Users, UserCog, PiggyBank, 
-  Settings, LogOut, LayoutDashboard 
+  Settings, LogOut, LayoutDashboard, UsersRound, BarChart3
 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
-  const { escolaAtiva, user, signOut } = useAuth();
+  const { escolaAtiva, isSystemRoot, user, signOut } = useAuth();
   const papel = escolaAtiva?.papel;
 
-  // declarando os menus da sidebar aqui pra ficar facinho de mapear no jsx e usar o .map lá embaixo!
-  // cada rota precisa verificar se o 'roles' bate com o perfil logado
+  // Hierarquia de acesso:
+  // Root       → tudo, sem restrição
+  // Admin      → tudo dentro da escola
+  // Diretor/Subdiretor → Dashboard, RH (leitura), Acadêmico (leitura+relat.), Financeiro (leitura)
+  // Secretaria → Dashboard, Enturmação, RH, Acadêmico, Usuários
+  // Professor  → Dashboard (mínimo), Acadêmico (Diário)
   const menus = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/app', roles: ['Admin', 'Diretor', 'Secretaria', 'Professor'] },
-    { name: 'Enturmação', icon: Users, path: '/app/enturmacao', roles: ['Admin', 'Secretaria'] },
-    { name: 'Gestão de RH', icon: UserCog, path: '/app/rh', roles: ['Admin', 'Diretor', 'Secretaria'] },
-    { name: 'Acadêmico', icon: GraduationCap, path: '/app/academico', roles: ['Admin', 'Diretor', 'Secretaria', 'Professor'] },
-    { name: 'Financeiro', icon: PiggyBank, path: '/app/financeiro', roles: ['Admin', 'Diretor'] },
-    { name: 'Configurações', icon: Settings, path: '/app/configuracoes', roles: ['Admin'] },
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/app',
+      roles: ['Admin', 'Diretor', 'Subdiretor', 'Secretaria', 'Professor'],
+    },
+    {
+      name: 'Enturmação',
+      icon: Users,
+      path: '/app/enturmacao',
+      roles: ['Admin', 'Secretaria'],
+    },
+    {
+      name: 'Gestão de RH',
+      icon: UserCog,
+      path: '/app/rh',
+      roles: ['Admin', 'Diretor', 'Subdiretor', 'Secretaria'],
+    },
+    {
+      name: 'Acadêmico',
+      icon: GraduationCap,
+      path: '/app/academico',
+      roles: ['Admin', 'Diretor', 'Subdiretor', 'Secretaria', 'Professor'],
+    },
+    {
+      name: 'Relatórios',
+      icon: BarChart3,
+      path: '/app/relatorios',
+      roles: ['Admin', 'Diretor', 'Subdiretor', 'Secretaria'],
+    },
+    {
+      name: 'Financeiro',
+      icon: PiggyBank,
+      path: '/app/financeiro',
+      roles: ['Admin', 'Diretor', 'Subdiretor'],
+    },
+    {
+      name: 'Usuários',
+      icon: UsersRound,
+      path: '/app/usuarios',
+      roles: ['Admin', 'Secretaria'],
+    },
+    {
+      name: 'Configurações',
+      icon: Settings,
+      path: '/app/configuracoes',
+      roles: ['Admin'],
+    },
   ];
 
-  const visibleMenus = menus.filter(m => !papel || m.roles.includes(papel));
+  // Root vê todos os menus; demais filtram pelo papel
+  const visibleMenus = isSystemRoot
+    ? menus
+    : menus.filter(m => !papel || m.roles.includes(papel));
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

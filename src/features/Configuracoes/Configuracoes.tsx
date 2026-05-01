@@ -3,10 +3,46 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { 
   Building2, ShieldAlert, Settings, Save, 
-  CheckCircle2, UserPlus, Lock 
+  CheckCircle2, UserPlus, Lock, Calendar, Plus, Trash2
 } from 'lucide-react';
 
-type Tab = 'dados' | 'acessos' | 'preferencias';
+type Tab = 'dados' | 'acessos' | 'preferencias' | 'periodos';
+
+interface PeriodoLetivo {
+  id: string;
+  nome: string;
+  ordem: number;
+  ano_letivo: number;
+  data_inicio: string;
+  data_fim: string;
+}
+
+const MODELOS_PERIODO: Record<string, { nome: string; periodos: Omit<PeriodoLetivo, 'id' | 'escola_id' | 'ano_letivo'>[] }> = {
+  Bimestral: {
+    nome: 'Bimestral (4x)',
+    periodos: [
+      { nome: '1º Bimestre', ordem: 1, data_inicio: '', data_fim: '' },
+      { nome: '2º Bimestre', ordem: 2, data_inicio: '', data_fim: '' },
+      { nome: '3º Bimestre', ordem: 3, data_inicio: '', data_fim: '' },
+      { nome: '4º Bimestre', ordem: 4, data_inicio: '', data_fim: '' },
+    ]
+  },
+  Trimestral: {
+    nome: 'Trimestral (3x)',
+    periodos: [
+      { nome: '1º Trimestre', ordem: 1, data_inicio: '', data_fim: '' },
+      { nome: '2º Trimestre', ordem: 2, data_inicio: '', data_fim: '' },
+      { nome: '3º Trimestre', ordem: 3, data_inicio: '', data_fim: '' },
+    ]
+  },
+  Semestral: {
+    nome: 'Semestral (2x)',
+    periodos: [
+      { nome: '1º Semestre', ordem: 1, data_inicio: '', data_fim: '' },
+      { nome: '2º Semestre', ordem: 2, data_inicio: '', data_fim: '' },
+    ]
+  },
+};
 
 export const Configuracoes: React.FC = () => {
   const { escolaAtiva, isSystemRoot } = useAuth();
@@ -23,6 +59,13 @@ export const Configuracoes: React.FC = () => {
   const [formatoAvaliacao, setFormatoAvaliacao] = useState('Bimestral');
   const [bloquearNotas, setBloquearNotas] = useState(false);
 
+  // Estados: Períodos Letivos
+  const [periodos, setPeriodos] = useState<PeriodoLetivo[]>([]);
+  const [anoLetivoP, setAnoLetivoP] = useState(new Date().getFullYear());
+  const [loadingPeriodos, setLoadingPeriodos] = useState(false);
+  const [modeloSelecionado, setModeloSelecionado] = useState('Bimestral');
+  const [gerando, setGerando] = useState(false);
+
   // Verificação de Acesso (Level Access)
   // O AppShell já restringe a rota para 'Admin', mas por precaução e para mostrar o "level access":
   const isAdmin = escolaAtiva?.papel === 'Admin';
@@ -35,7 +78,10 @@ export const Configuracoes: React.FC = () => {
     if (activeTab === 'acessos' && escolaAtiva) {
       carregarUsuarios();
     }
-  }, [activeTab, escolaAtiva]);
+    if (activeTab === 'periodos' && escolaAtiva) {
+      carregarPeriodos();
+    }
+  }, [activeTab, escolaAtiva, anoLetivoP]);
 
   const carregarUsuarios = async () => {
     setLoadingUsuarios(true);
@@ -51,6 +97,52 @@ export const Configuracoes: React.FC = () => {
       setUsuariosAcesso(data);
     }
     setLoadingUsuarios(false);
+  };
+
+  const carregarPeriodos = async () => {
+    if (!escolaAtiva) return;
+    setLoadingPeriodos(true);
+    const { data } = await supabase
+      .from('periodos_letivos')
+      .select('*')
+      .eq('escola_id', escolaAtiva.escola_id)
+      .eq('ano_letivo', anoLetivoP)
+      .order('ordem');
+    setPeriodos((data || []) as PeriodoLetivo[]);
+    setLoadingPeriodos(false);
+  };
+
+  const handleGerarPeriodos = async () => {
+    if (!escolaAtiva || !podeEditar) return;
+    setGerando(true);
+    // Remove periodos existentes do ano
+    await supabase.from('periodos_letivos')
+      .delete()
+      .eq('escola_id', escolaAtiva.escola_id)
+      .eq('ano_letivo', anoLetivoP);
+    // Insere o modelo selecionado
+    const modelo = MODELOS_PERIODO[modeloSelecionado];
+    const inserts = modelo.periodos.map(p => ({
+      escola_id: escolaAtiva.escola_id,
+      nome: p.nome,
+      ordem: p.ordem,
+      ano_letivo: anoLetivoP,
+      data_inicio: `${anoLetivoP}-02-01`,
+      data_fim: `${anoLetivoP}-12-15`,
+    }));
+    await supabase.from('periodos_letivos').insert(inserts);
+    setGerando(false);
+    carregarPeriodos();
+  };
+
+  const handleExcluirPeriodo = async (id: string) => {
+    await supabase.from('periodos_letivos').delete().eq('id', id);
+    carregarPeriodos();
+  };
+
+  const handleUpdatePeriodo = async (id: string, field: string, value: string) => {
+    await supabase.from('periodos_letivos').update({ [field]: value }).eq('id', id);
+    carregarPeriodos();
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -117,6 +209,17 @@ export const Configuracoes: React.FC = () => {
         >
           <Settings size={18} />
           Preferências
+        </button>
+        <button
+          onClick={() => setActiveTab('periodos')}
+          className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+            activeTab === 'periodos'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <Calendar size={18} />
+          Períodos Letivos
         </button>
       </div>
 
@@ -322,6 +425,88 @@ export const Configuracoes: React.FC = () => {
               </div>
             )}
           </form>
+        )}
+
+        {/* ========== ABA: PERÍODOS LETIVOS ========== */}
+        {activeTab === 'periodos' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-4">
+              <h2 className="font-bold text-gray-900 flex items-center gap-2"><Calendar size={18} className="text-indigo-600" /> Configurar Períodos Letivos</h2>
+              <p className="text-sm text-gray-500">Defina os períodos do ano letivo (Bimestral, Trimestral ou Semestral). O padrão é Bimestral conforme a maioria das redes de ensino.</p>
+              <div className="flex flex-wrap gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Ano Letivo</label>
+                  <input type="number" value={anoLetivoP} onChange={e => setAnoLetivoP(Number(e.target.value))}
+                    className="w-28 p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Modelo de Período</label>
+                  <select value={modeloSelecionado} onChange={e => setModeloSelecionado(e.target.value)}
+                    className="p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 appearance-none">
+                    {Object.entries(MODELOS_PERIODO).map(([k, v]) => (
+                      <option key={k} value={k}>{v.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                {podeEditar && (
+                  <button onClick={handleGerarPeriodos} disabled={gerando}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                    <Plus size={16} /> {gerando ? 'Gerando...' : `Gerar Períodos ${anoLetivoP}`}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {loadingPeriodos ? (
+              <div className="text-center py-6 text-gray-400 text-sm">Carregando...</div>
+            ) : periodos.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-200">
+                Nenhum período cadastrado para {anoLetivoP}. Gere acima.
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3 w-8">#</th>
+                      <th className="px-4 py-3">Nome</th>
+                      <th className="px-4 py-3">Início</th>
+                      <th className="px-4 py-3">Término</th>
+                      {podeEditar && <th className="px-4 py-3 w-16"></th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {periodos.map(p => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-400 font-medium">{p.ordem}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900">{p.nome}</td>
+                        <td className="px-4 py-3">
+                          <input type="date" defaultValue={p.data_inicio}
+                            onBlur={e => handleUpdatePeriodo(p.id, 'data_inicio', e.target.value)}
+                            disabled={!podeEditar}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-xs text-gray-900 bg-white disabled:opacity-50" />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input type="date" defaultValue={p.data_fim}
+                            onBlur={e => handleUpdatePeriodo(p.id, 'data_fim', e.target.value)}
+                            disabled={!podeEditar}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-xs text-gray-900 bg-white disabled:opacity-50" />
+                        </td>
+                        {podeEditar && (
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => handleExcluirPeriodo(p.id)}
+                              className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50">
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useEscolaAtual } from '../../../hooks/useEscolaAtual';
 import { RootEscolaSelector } from '../../../components/RootEscolaSelector';
-import { Plus, Search, Edit2, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users, GraduationCap } from 'lucide-react';
 import type { Disciplina } from './GestaoDisciplinas';
+import { AlunosTurma } from './AlunosTurma';
 
 interface Turma {
   id: string;
@@ -45,6 +46,7 @@ export const GestaoTurmas: React.FC = () => {
   const [formTurma, setFormTurma] = useState({ id: '', nome: '', ano_letivo: new Date().getFullYear(), turno: 'Matutino' });
 
   const [showModalProf, setShowModalProf] = useState(false);
+  const [abaModal, setAbaModal] = useState<'professores' | 'alunos'>('professores');
   const [turmaSelecionada, setTurmaSelecionada] = useState<Turma | null>(null);
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
@@ -141,8 +143,9 @@ export const GestaoTurmas: React.FC = () => {
     if (turmaSelecionada) carregarProfessoresDaTurma(turmaSelecionada.id);
   };
 
-  const openProfModal = (turma: Turma) => {
+  const openProfModal = (turma: Turma, aba: 'professores' | 'alunos' = 'professores') => {
     setTurmaSelecionada(turma);
+    setAbaModal(aba);
     setFormProf({ professor_id: '', disciplina_id: '' });
     setErroProf('');
     carregarProfessoresDaTurma(turma.id);
@@ -214,9 +217,14 @@ export const GestaoTurmas: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <button onClick={() => openProfModal(turma)} className="w-full mt-2 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-200 flex justify-center items-center gap-2 transition-colors">
-                    <Users size={16} /> Professores e Disciplinas
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => openProfModal(turma, 'professores')} className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium border border-gray-200 flex justify-center items-center gap-1.5 transition-colors">
+                      <GraduationCap size={15} /> Professores
+                    </button>
+                    <button onClick={() => openProfModal(turma, 'alunos')} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 rounded-lg text-sm font-medium border border-indigo-200 flex justify-center items-center gap-1.5 transition-colors">
+                      <Users size={15} /> Alunos
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -277,68 +285,83 @@ export const GestaoTurmas: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-xl">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
               <div>
-                <h2 className="font-bold text-lg text-gray-900">Professores</h2>
-                <p className="text-sm text-gray-500">{turmaSelecionada.nome} • {turmaSelecionada.turno} • {turmaSelecionada.ano_letivo}</p>
+                <h2 className="font-bold text-lg text-gray-900">{turmaSelecionada.nome}</h2>
+                <p className="text-sm text-gray-500">{turmaSelecionada.turno} • {turmaSelecionada.ano_letivo}</p>
               </div>
               <button onClick={() => setShowModalProf(false)} className="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
             </div>
+            <div className="flex border-b border-gray-100 bg-gray-50">
+              {(['professores', 'alunos'] as const).map(aba => (
+                <button key={aba} onClick={() => setAbaModal(aba)}
+                  className={`flex-1 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                    abaModal === aba ? 'border-b-2 border-indigo-600 text-indigo-700 bg-white' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {aba === 'professores' ? <GraduationCap size={15} /> : <Users size={15} />}
+                  {aba === 'professores' ? 'Professores e Disciplinas' : 'Alunos Matriculados'}
+                </button>
+              ))}
+            </div>
 
             <div className="p-6 flex-1 overflow-auto bg-gray-50">
-              {disciplinas.length === 0 && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
-                  Nenhuma disciplina cadastrada. Acesse a aba <strong>Disciplinas</strong> para cadastrá-las primeiro.
-                </div>
-              )}
-              <form onSubmit={handleSalvarProfTurma} className="bg-white p-4 rounded-xl border border-gray-200 mb-6 space-y-3 shadow-sm">
-                <p className="text-xs font-bold text-gray-500 uppercase">Vincular Professor à Disciplina</p>
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Professor</label>
-                    <select required value={formProf.professor_id} onChange={e => setFormProf({ ...formProf, professor_id: e.target.value })} className="w-full p-2 text-sm border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500">
-                      <option value="">Selecione...</option>
-                      {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Disciplina</label>
-                    <select required value={formProf.disciplina_id} onChange={e => setFormProf({ ...formProf, disciplina_id: e.target.value })} className="w-full p-2 text-sm border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500">
-                      <option value="">Selecione...</option>
-                      {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
-                    </select>
-                  </div>
-                  <button type="submit" disabled={salvandoProf || disciplinas.length === 0} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 h-[38px] disabled:opacity-50">
-                    <Plus size={16} /> {salvandoProf ? '...' : 'Adicionar'}
-                  </button>
-                </div>
-                {erroProf && <p className="text-xs text-red-600">{erroProf}</p>}
-              </form>
-
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-600">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Disciplina</th>
-                      <th className="px-4 py-3 font-medium">Professor</th>
-                      <th className="px-4 py-3 w-16"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {turmaProfessores.length === 0 ? (
-                      <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">Nenhum professor vinculado ainda.</td></tr>
-                    ) : (
-                      turmaProfessores.map(tp => (
-                        <tr key={tp.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium text-gray-900">{tp.disciplinas?.nome}</td>
-                          <td className="px-4 py-3 text-gray-600">{tp.perfis?.nome}</td>
-                          <td className="px-4 py-3 text-right">
-                            <button onClick={() => handleExcluirProfTurma(tp.id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
-                          </td>
+              {abaModal === 'professores' && (
+                <>
+                  {disciplinas.length === 0 && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                      Nenhuma disciplina cadastrada. Acesse a aba <strong>Disciplinas</strong> para cadastrá-las primeiro.
+                    </div>
+                  )}
+                  <form onSubmit={handleSalvarProfTurma} className="bg-white p-4 rounded-xl border border-gray-200 mb-6 space-y-3 shadow-sm">
+                    <p className="text-xs font-bold text-gray-500 uppercase">Vincular Professor à Disciplina</p>
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Professor</label>
+                        <select required value={formProf.professor_id} onChange={e => setFormProf({...formProf, professor_id: e.target.value})} className="w-full p-2 text-sm border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 appearance-none">
+                          <option value="">Selecione...</option>
+                          {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Disciplina</label>
+                        <select required value={formProf.disciplina_id} onChange={e => setFormProf({...formProf, disciplina_id: e.target.value})} className="w-full p-2 text-sm border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 appearance-none">
+                          <option value="">Selecione...</option>
+                          {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
+                        </select>
+                      </div>
+                      <button type="submit" disabled={salvandoProf||disciplinas.length===0} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 h-[38px] disabled:opacity-50">
+                        <Plus size={16}/> {salvandoProf?'...':'Adicionar'}
+                      </button>
+                    </div>
+                    {erroProf && <p className="text-xs text-red-600">{erroProf}</p>}
+                  </form>
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200 text-gray-600">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Disciplina</th>
+                          <th className="px-4 py-3 font-medium">Professor</th>
+                          <th className="px-4 py-3 w-16"></th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {turmaProfessores.length===0
+                          ? <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">Nenhum professor vinculado ainda.</td></tr>
+                          : turmaProfessores.map(tp => (
+                            <tr key={tp.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 font-medium text-gray-900">{tp.disciplinas?.nome}</td>
+                              <td className="px-4 py-3 text-gray-600">{tp.perfis?.nome}</td>
+                              <td className="px-4 py-3 text-right"><button onClick={()=>handleExcluirProfTurma(tp.id)} className="text-gray-400 hover:text-red-600 transition-colors"><Trash2 size={16}/></button></td>
+                            </tr>
+                          ))
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+              {abaModal === 'alunos' && escolaId && (
+                <AlunosTurma turmaId={turmaSelecionada.id} turmaNome={turmaSelecionada.nome} escolaId={escolaId} anoLetivo={turmaSelecionada.ano_letivo} />
+              )}
             </div>
           </div>
         </div>

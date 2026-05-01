@@ -25,6 +25,8 @@ import { EquipeRoot } from './root/pages/EquipeRoot';
 import { ConfiguracoesRoot } from './root/pages/ConfiguracoesRoot';
 
 import { AcademicoDashboard } from './features/Academico/AcademicoDashboard';
+import { GestaoUsuarios } from './features/Usuarios/GestaoUsuarios';
+import { RelatoriosDashboard } from './features/Relatorios/RelatoriosDashboard';
 
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
@@ -52,10 +54,12 @@ export const App = () => {
 
             <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<DashboardResumo />} />
-              <Route path="enturmacao" element={<AlunosEnturmacao />} />
-              <Route path="rh" element={<RHDashboard />} />
-              <Route path="academico" element={<AcademicoDashboard />} />
-              <Route path="financeiro" element={<FinanceiroDashboard />} />
+              <Route path="enturmacao"   element={<AlunosEnturmacao />} />
+              <Route path="rh"           element={<RHDashboard />} />
+              <Route path="academico"    element={<AcademicoDashboard />} />
+              <Route path="relatorios"   element={<RelatoriosDashboard />} />
+              <Route path="financeiro"   element={<FinanceiroDashboard />} />
+              <Route path="usuarios"     element={<GestaoUsuarios />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
 

@@ -4,8 +4,13 @@ import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 // Tipos base de nossa aplicação
-export type PerfilPapel = 'Admin' | 'Diretor' | 'Secretaria' | 'Professor' | 'Aluno';
+export type PerfilPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor' | 'Aluno';
 export type VinculoTipo = 'Efetivo' | 'Designado';
+
+// Helpers de permissão reutilizáveis
+export const PAPEIS_GESTAO = ['Admin', 'Diretor', 'Subdiretor', 'Secretaria'] as const;
+export const PAPEIS_DIRECAO = ['Admin', 'Diretor', 'Subdiretor'] as const;
+export const PAPEIS_ADMIN = ['Admin'] as const;
 
 export interface Escola {
   id: string;
