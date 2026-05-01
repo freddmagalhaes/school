@@ -7,10 +7,10 @@ import { DashboardResumo } from './features/Dashboard/DashboardResumo';
 import { RHDashboard } from './features/Secretaria/RHDashboard';
 import { AlunosEnturmacao } from './features/Secretaria/AlunosEnturmacao';
 import { FinanceiroDashboard } from './features/Financeiro/FinanceiroDashboard';
-import { Home } from './pages/Home';
 import { Login } from './pages/Login';
-import { Contato } from './pages/Contato';
-import { Checkout } from './pages/Checkout';
+import { EsqueciSenha } from './pages/EsqueciSenha';
+import { ResetPassword } from './pages/ResetPassword';
+import { Configuracoes } from './features/Configuracoes/Configuracoes';
 
 // ---- Painel Root (BackOffice) ----
 import { RootAuthProvider } from './contexts/RootAuthContext';
@@ -26,7 +26,6 @@ import { ConfiguracoesRoot } from './root/pages/ConfiguracoesRoot';
 
 // Stubs para módulos em construção
 const Academico    = () => <div className="p-6 text-gray-500">Módulo Acadêmico — Em Construção</div>;
-const Configuracoes = () => <div className="p-6 text-gray-500">Configurações — Em Construção</div>;
 
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
@@ -47,10 +46,10 @@ export const App = () => {
       <ThemeProvider>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/contato" element={<Contato />} />
-            <Route path="/assinar" element={<Checkout />} />
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<DashboardResumo />} />

@@ -34,7 +34,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [membros, setMembros] = useState<MembroEscola[]>([]);
   const [escolaAtiva, setEscolaAtiva] = useState<MembroEscola | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,9 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchMembros = async (userId: string) => {
     try {
       setLoading(true);
-      // Simulação para quando testar sem Supabase conectado 
-      // Quando for pro banco real será a query abaixo:
-      /*
+      
       const { data, error } = await supabase
         .from('membros_escola')
         .select(`
@@ -82,35 +80,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           escola:escolas (id, nome, cnpj)
         `)
         .eq('user_id', userId);
-      */
+        
+      if (error) {
+        console.error("Erro ao buscar vínculos no Supabase:", error);
+        setMembros([]);
+        return;
+      }
       
-      const mockMembros: MembroEscola[] = [
-        {
-          id: 'vinc-1',
-          escola_id: 'esc-1',
-          user_id: userId,
-          papel: 'Secretaria',
-          tipo_vinculo: 'Efetivo',
-          escola: { id: 'esc-1', nome: 'Escola Modelo Nacional', cnpj: '00.000.000/0001-00' }
-        },
-        {
-          id: 'vinc-2',
-          escola_id: 'esc-2',
-          user_id: userId,
-          papel: 'Professor',
-          tipo_vinculo: 'Designado',
-          escola: { id: 'esc-2', nome: 'Instituto Educacional Avançado', cnpj: '11.111.111/0001-11' }
-        }
-      ];
-
-      setMembros(mockMembros);
+      const realMembros = (data as unknown) as MembroEscola[];
+      setMembros(realMembros);
       
       const savedEscolaId = localStorage.getItem('escola_ativa_id');
       if (savedEscolaId) {
-        const found = mockMembros.find(m => m.escola_id === savedEscolaId);
-        setEscolaAtiva(found || mockMembros[0] || null);
-      } else if (mockMembros.length > 0) {
-        setEscolaAtiva(mockMembros[0]); // Seleciona a primeira se só tiver uma (ou se não salvou antes)
+        const found = realMembros.find(m => m.escola_id === savedEscolaId);
+        setEscolaAtiva(found || realMembros[0] || null);
+      } else if (realMembros.length > 0) {
+        setEscolaAtiva(realMembros[0]); 
       }
       
     } catch (error) {
@@ -132,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{
-      user: { id: 'mock-user', email: 'secretaria@edu.com' } as User, // Mock para teste
+      user,
       membros,
       escolaAtiva,
       setEscolaAtiva: handleSetEscolaAtiva,
