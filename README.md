@@ -96,7 +96,36 @@ npm run dev
 ```
 
 Acesse `http://localhost:5173`.
+---
 
+## 🚀 Produção AWS
+
+Para publicar em produção na AWS usando o deploy script incluído:
+
+1. Configure a instância EC2 com Ubuntu e abra a porta 80.
+2. Ajuste o IP da EC2, o caminho da chave e o domínio no comando:
+
+```bash
+./deploy.sh <IP_DA_EC2> <CAMINHO_CHAVE_PEM> [EC2_USER] [DOMINIO] [EMAIL_CERTBOT]
+```
+
+Exemplo com HTTPS:
+
+```bash
+./deploy.sh 52.2.205.190 ~/.ssh/edugestao.pem ubuntu example.com admin@example.com
+```
+
+3. O script gera o build localmente, envia `dist/` para o servidor e configura o Nginx com fallback para React Router.
+4. Se o domínio for informado e já apontar para o servidor, o script tenta configurar HTTPS automaticamente com Certbot.
+5. Após o deploy, a aplicação ficará disponível em `http://<IP_DA_EC2>` ou `https://<DOMINIO>` se o Certbot for configurado com sucesso.
+
+### Observações importantes
+
+- O `deploy.sh` serve os arquivos estáticos da pasta `/var/www/edugestao/school`.
+- O Nginx é configurado para aplicar `try_files $uri $uri/ /index.html;`, essencial para o `BrowserRouter` do React.
+- O backend de autenticação e dados deve estar configurado no Supabase; essa aplicação é somente frontend estático.
+- A Edge Function `create-school-user` deve estar implantada no Supabase para criar usuários com segurança.
+- Caso o domínio não esteja apontado ainda, execute o script sem o parâmetro `DOMINIO` e configure o DNS antes de ativar o HTTPS.
 ---
 
 ## 🎯 Por que este update importa
