@@ -1,33 +1,37 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppShell } from './components/AppShell';
-import { DashboardResumo } from './features/Dashboard/DashboardResumo';
-import { RHDashboard } from './features/Secretaria/RHDashboard';
-import { AlunosEnturmacao } from './features/Secretaria/AlunosEnturmacao';
-import { CadastroAlunos } from './features/Secretaria/CadastroAlunos';
-import { FinanceiroDashboard } from './features/Financeiro/FinanceiroDashboard';
 import { Login } from './pages/Login';
 import { EsqueciSenha } from './pages/EsqueciSenha';
 import { ResetPassword } from './pages/ResetPassword';
-import { Configuracoes } from './features/Configuracoes/Configuracoes';
 
 // ---- Painel Root (BackOffice) ----
 import { RootAuthProvider } from './contexts/RootAuthContext';
 import { RootProtectedRoute } from './root/layout/RootProtectedRoute';
 import { RootShell } from './root/layout/RootShell';
 import { RootLogin } from './root/pages/RootLogin';
-import { RootDashboard } from './root/pages/RootDashboard';
-import { ClientesRoot } from './root/pages/ClientesRoot';
-import { ClienteDetalhe } from './root/pages/ClienteDetalhe';
-import { FinanceiroRoot } from './root/pages/FinanceiroRoot';
-import { EquipeRoot } from './root/pages/EquipeRoot';
-import { ConfiguracoesRoot } from './root/pages/ConfiguracoesRoot';
 
-import { AcademicoDashboard } from './features/Academico/AcademicoDashboard';
-import { GestaoUsuarios } from './features/Usuarios/GestaoUsuarios';
-import { RelatoriosDashboard } from './features/Relatorios/RelatoriosDashboard';
+// ---- Lazy Loaded Features (App Principal) ----
+const DashboardResumo = lazy(() => import('./features/Dashboard/DashboardResumo').then(m => ({ default: m.DashboardResumo })));
+const RHDashboard = lazy(() => import('./features/Secretaria/RHDashboard').then(m => ({ default: m.RHDashboard })));
+const AlunosEnturmacao = lazy(() => import('./features/Secretaria/AlunosEnturmacao').then(m => ({ default: m.AlunosEnturmacao })));
+const CadastroAlunos = lazy(() => import('./features/Secretaria/CadastroAlunos').then(m => ({ default: m.CadastroAlunos })));
+const FinanceiroDashboard = lazy(() => import('./features/Financeiro/FinanceiroDashboard').then(m => ({ default: m.FinanceiroDashboard })));
+const Configuracoes = lazy(() => import('./features/Configuracoes/Configuracoes').then(m => ({ default: m.Configuracoes })));
+const AcademicoDashboard = lazy(() => import('./features/Academico/AcademicoDashboard').then(m => ({ default: m.AcademicoDashboard })));
+const GestaoUsuarios = lazy(() => import('./features/Usuarios/GestaoUsuarios').then(m => ({ default: m.GestaoUsuarios })));
+const RelatoriosDashboard = lazy(() => import('./features/Relatorios/RelatoriosDashboard').then(m => ({ default: m.RelatoriosDashboard })));
+
+// ---- Lazy Loaded Features (BackOffice) ----
+const RootDashboard = lazy(() => import('./root/pages/RootDashboard').then(m => ({ default: m.RootDashboard })));
+const ClientesRoot = lazy(() => import('./root/pages/ClientesRoot').then(m => ({ default: m.ClientesRoot })));
+const ClienteDetalhe = lazy(() => import('./root/pages/ClienteDetalhe').then(m => ({ default: m.ClienteDetalhe })));
+const FinanceiroRoot = lazy(() => import('./root/pages/FinanceiroRoot').then(m => ({ default: m.FinanceiroRoot })));
+const EquipeRoot = lazy(() => import('./root/pages/EquipeRoot').then(m => ({ default: m.EquipeRoot })));
+const ConfiguracoesRoot = lazy(() => import('./root/pages/ConfiguracoesRoot').then(m => ({ default: m.ConfiguracoesRoot })));
 
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
@@ -39,15 +43,27 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const App = () => {
+  // Fallback de carregamento para as rotas lazy
+  const SuspenseFallback = (
+    <div className="h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-[#0f1115]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-gray-500 font-medium">Carregando módulo...</p>
+      </div>
+    </div>
+  );
+
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
       {/*
        * ThemeProvider envolve o site púublico e o sistema dos clientes.
        * O BackOffice (/ops) tem design dark fixo e NÃO herda este tema.
        */}
       <ThemeProvider>
         <AuthProvider>
-          <Routes>
+          <Suspense fallback={SuspenseFallback}>
+            <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
@@ -87,10 +103,12 @@ export const App = () => {
                 </Route>
               </Route>
             </Route>
-          </Routes>
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </ThemeProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 
