@@ -27,10 +27,37 @@ export const FinanceiroDashboard: React.FC = () => {
   const [faturaGerada, setFaturaGerada] = useState<FaturaGerada | null>(null);
   const [gerandoId, setGerandoId] = useState<string | null>(null);
 
-  const inadimplentes: DadosCobranca[] = [
-    { id_aluno: '1', nome_responsavel: 'Marcos Silva', telefone_responsavel: '11999999999', valor_pendente: 450.00, mes_referencia: 'Maio/2026' },
-    { id_aluno: '2', nome_responsavel: 'Ana Souza', telefone_responsavel: '11988888888', valor_pendente: 900.00, mes_referencia: 'Abril e Maio/2026' }
-  ];
+  const [inadimplentes, setInadimplentes] = useState<DadosCobranca[]>([]);
+
+  const carregarInadimplentes = async () => {
+    if (!escolaAtiva) return;
+    const { data } = await supabase
+      .from('faturas')
+      .select(`
+        aluno_id,
+        valor,
+        mes_referencia,
+        membros_escola:aluno_id (
+          perfis:user_id (nome, telefone)
+        )
+      `)
+      .eq('escola_id', escolaAtiva.escola_id)
+      .neq('status', 'Pago');
+
+    if (data) {
+      const lista = (data as any[]).map(f => {
+        const perfil = f.membros_escola?.perfis;
+        return {
+          id_aluno: f.aluno_id,
+          nome_responsavel: perfil?.nome || 'Responsável',
+          telefone_responsavel: perfil?.telefone || '',
+          valor_pendente: Number(f.valor),
+          mes_referencia: f.mes_referencia
+        };
+      });
+      setInadimplentes(lista);
+    }
+  };
 
   const handleGerarCobranca = async (dados: DadosCobranca) => {
     setGerandoId(dados.id_aluno);
@@ -44,6 +71,42 @@ export const FinanceiroDashboard: React.FC = () => {
     } finally {
       setGerandoId(null);
     }
+  };
+
+  const handleMarcarPago = async (idAluno: string, mesReferencia: string) => {
+    if (!escolaAtiva || !confirm('Confirmar o recebimento deste valor?')) return;
+    setLoading(true);
+    
+    // Procura a fatura exata desse aluno nesse mes
+    const { data: fatura } = await supabase
+      .from('faturas')
+      .select('id, valor')
+      .eq('aluno_id', idAluno)
+      .eq('mes_referencia', mesReferencia)
+      .neq('status', 'Pago')
+      .single();
+
+    if (fatura) {
+      // 1. Atualiza o status para Pago
+      await supabase.from('faturas').update({ status: 'Pago', data_pagamento: new Date().toISOString().split('T')[0] }).eq('id', fatura.id);
+      
+      // 2. Lança automaticamente uma receita no financeiro_verbas
+      await supabase.from('financeiro_verbas').insert({
+        escola_id: escolaAtiva.escola_id,
+        categoria: `Mensalidade ${mesReferencia} - Aluno`,
+        valor: fatura.valor,
+        tipo: 'Entrada',
+        status_aprovacao: 'Aprovado',
+        data_registro: new Date().toISOString().split('T')[0]
+      });
+
+      alert('Pagamento registrado e receita adicionada ao caixa!');
+      carregarInadimplentes();
+      carregarMovimentacoes();
+    } else {
+      alert('Fatura não encontrada ou já paga.');
+    }
+    setLoading(false);
   };
 
   const [formMovimentacao, setFormMovimentacao] = useState({
@@ -82,6 +145,41 @@ export const FinanceiroDashboard: React.FC = () => {
 
   const fecharModalMovimentacao = () => setShowModal(false);
 
+  const handleGerarMassa = async () => {
+    if (!escolaAtiva) return;
+    if (!confirm('Gerar fatura de R$ 500,00 para todos os alunos ativos da escola neste mês?')) return;
+    setLoading(true);
+    
+    // Pega os alunos matriculados
+    const { data: matriculas } = await supabase
+      .from('turma_alunos')
+      .select('aluno_id, turma_id, turmas!inner(escola_id)')
+      .eq('status', 'Ativo')
+      .eq('turmas.escola_id', escolaAtiva.escola_id);
+      
+    if (matriculas && matriculas.length > 0) {
+      const mesAtual = format(new Date(), 'MMMM/yyyy');
+      
+      const faturas = matriculas.map(m => ({
+        escola_id: escolaAtiva.escola_id,
+        aluno_id: m.aluno_id,
+        turma_id: m.turma_id,
+        valor: 500.00,
+        data_vencimento: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 10).toISOString().split('T')[0], // dia 10 do prox mes
+        status: 'Pendente',
+        mes_referencia: mesAtual
+      }));
+
+      await supabase.from('faturas').insert(faturas);
+      alert(`${faturas.length} faturas geradas com sucesso!`);
+      carregarInadimplentes();
+    } else {
+      alert('Nenhum aluno ativo encontrado nas turmas.');
+    }
+    
+    setLoading(false);
+  };
+
   const handleSalvarMovimentacao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!escolaAtiva) return;
@@ -116,6 +214,7 @@ export const FinanceiroDashboard: React.FC = () => {
   useEffect(() => {
     if (!escolaAtiva) return;
     carregarMovimentacoes();
+    carregarInadimplentes();
   }, [escolaAtiva]);
 
   const carregarMovimentacoes = async () => {
@@ -219,8 +318,19 @@ export const FinanceiroDashboard: React.FC = () => {
       {activeTab === 'inadimplentes' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Painel de Inadimplência e Cobrança</h3>
-            <p className="text-sm text-gray-500 mb-6">Identifique parcelas atrasadas e gere PIX ou Boletos com envio automático via WhatsApp.</p>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Painel de Inadimplência e Cobrança</h3>
+                <p className="text-sm text-gray-500">Identifique parcelas atrasadas e gere PIX ou Boletos com envio automático via WhatsApp.</p>
+              </div>
+              <button 
+                onClick={handleGerarMassa}
+                disabled={loading}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+              >
+                Gerar Faturas do Mês (Teste)
+              </button>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -239,14 +349,24 @@ export const FinanceiroDashboard: React.FC = () => {
                       <td className="px-6 py-4 text-center text-rose-600 font-semibold">{ind.mes_referencia}</td>
                       <td className="px-6 py-4 text-right font-bold text-gray-900">R$ {ind.valor_pendente.toFixed(2)}</td>
                       <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleGerarCobranca(ind)}
-                          disabled={gerandoId === ind.id_aluno}
-                          className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
-                        >
-                          <Send size={14} />
-                          {gerandoId === ind.id_aluno ? 'Gerando...' : 'Cobrar WhatsApp'}
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleGerarCobranca(ind)}
+                            disabled={gerandoId === ind.id_aluno}
+                            className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                          >
+                            <Send size={14} />
+                            {gerandoId === ind.id_aluno ? 'Gerando...' : 'Cobrar WhatsApp'}
+                          </button>
+                          <button
+                            onClick={() => handleMarcarPago(ind.id_aluno, ind.mes_referencia)}
+                            className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+                            title="Confirmar pagamento manual"
+                          >
+                            <CheckCircle size={14} />
+                            Baixa
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
