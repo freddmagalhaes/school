@@ -11,6 +11,8 @@ interface LeadINEP {
   dependencia_adm: string;
   localizacao: string;
   status: string;
+}
+
 import { formatarCNPJ, formatarCPF, validarCNPJ, validarCPF } from '../../utils/validators';
 
 export const LeadsINEP: React.FC = () => {

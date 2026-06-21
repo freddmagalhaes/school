@@ -1,5 +1,12 @@
-
 node_modules
 dist
 build
 .git
+.github
+.env.local
+.env.*.local
+supabase/
+scripts/
+README.md
+E2E_FLOW.md
+*.log

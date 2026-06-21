@@ -1,13 +1,15 @@
-# Estágio 1: Build (Compilação) usando Node 20 (compatível com Vite 8 e React Router 7)
+# Estágio 1: Build (Compilação) usando Node 20
 FROM node:20-alpine as build
 WORKDIR /app
 
-# Copia TODO o código do projeto para dentro do container primeiro
-# Isso resolve o erro do "postinstall" garantindo que a pasta "server" exista
-COPY . .
+# Copia apenas os arquivos de dependência primeiro para otimizar o cache do Docker
+COPY package.json package-lock.json* ./
 
-# Instala as dependências principais e roda os scripts de postinstall
-RUN npm install
+# Instala as dependências (preferência para ci se houver package-lock.json)
+RUN npm ci || npm install
+
+# Copia o restante do código
+COPY . .
 
 # Faz o build de produção do React/Vite
 RUN npm run build
@@ -15,8 +17,13 @@ RUN npm run build
 # Estágio 2: Produção (Servidor Nginx)
 FROM nginx:alpine
 
+# Remove as configurações padrões do Nginx
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copia nossa configuração de roteamento SPA para o Nginx
+COPY nginx.conf /etc/nginx/conf.d/
+
 # Copia a pasta gerada pelo build para o Nginx
-# NOTA: O Vite normalmente gera a pasta "dist". Se falhar aqui, mude "/app/dist" para "/app/build"
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Expõe a porta 80 internamente

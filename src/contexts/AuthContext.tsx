@@ -170,9 +170,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('escola_ativa_id');
-    setIsSystemRoot(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Erro ao fazer logoff", err);
+    } finally {
+      setUser(null);
+      setPerfil(null);
+      setMembros([]);
+      setEscolaAtiva(null);
+      setIsSystemRoot(false);
+      localStorage.removeItem('escola_ativa_id');
+      window.location.href = '/login';
+    }
   };
 
   return (

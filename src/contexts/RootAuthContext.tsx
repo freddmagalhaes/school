@@ -134,9 +134,15 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setOperador(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[RootAuth] Erro ao deslogar:', err);
+    } finally {
+      setUser(null);
+      setOperador(null);
+      window.location.href = '/ops/login';
+    }
   };
 
   return (
