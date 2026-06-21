@@ -13,7 +13,7 @@ export type TipoNotificacao =
   | 'nova_contratacao'    // 🟢 Média — Novo cliente aguardando ativação
   | 'cancelamento_recente'; // ⚪ Baixa — Churn recente, oportunidade de retenção
 
-export type PrioridadeNotificacao = 'critica' | 'alta' | 'media' | 'baixa';
+type PrioridadeNotificacao = 'critica' | 'alta' | 'media' | 'baixa';
 
 export interface Notificacao {
   id: string;

@@ -6,8 +6,10 @@ Bem-vindo ao repositório do **EduGestão Pro**, a plataforma de gestão escolar
 
 - ✅ Nova tela de **Cadastro de Alunos** em `/app/cadastro-alunos` com formulário completo de matrícula, dados pessoais e validações básicas.
 - ✅ Implementado controle de **level access** para que apenas `Admin` e `Secretaria` possam cadastrar alunos.
+- ✅ Novo módulo gerador de **Documentos Oficiais em PDF** corporativos (Declarações, Históricos e Atas).
+- ✅ Novo **Portal do Aluno e Responsável** (`/portal`) para gestão de notas, frequência e avisos isolado do backoffice.
+- ✅ Automação Financeira contra inadimplência: geração simulada de PIX e disparo de **Cobrança Automática via WhatsApp**.
 - ✅ Criado ambiente visível para `Root` com acesso cruzado ao **Backoffice** (`/ops/dashboard`) e ao ecossistema administrativo do cliente.
-- ✅ Ajustado o fluxo para que `Root` possa navegar no painel `/app` e também ter atalho dedicado ao backoffice.
 - ✅ Integrado criação de usuários via **Supabase Edge Function** segura (`create-school-user`) com `service_role`.
 
 ---
@@ -19,6 +21,10 @@ O sistema conta com dois painéis principais:
 - **Painel do Cliente** (`/app`)
   - Uso por escola: `Admin`, `Diretor`, `Subdiretor`, `Secretaria`, `Professor`.
   - Gestão acadêmica, RH, cadastro de alunos, enturmação e relatórios.
+
+- **Portal do Aluno / Responsável** (`/portal`)
+  - Uso por: `Aluno`, `Responsável`.
+  - Ambiente isolado para visualização de Boletim Escolar, Quadro de Avisos e Situação Financeira.
 
 - **Painel Root / BackOffice** (`/ops`)
   - Uso interno: `Root`, `Super Admin`, `Suporte`, `Financeiro`, `Operacional`.
@@ -46,10 +52,10 @@ O sistema conta com dois painéis principais:
 
 - **Cadastro de Alunos**: novo fluxo completo com painel visível apenas para perfis permitidos.
 - **Gestão de Usuários**: criação de usuários da escola com e-mail de primeiro acesso.
-- **Enturmação**: matrícula e saída de alunos com status e histórico.
+- **Enturmação e Documentos**: matrícula, movimentações e emissão de PDFs (Declarações, Transferências).
 - **RH**: gestão de profissionais, papéis e vínculos escolares.
 - **Acadêmico**: turmas, disciplinas, diário de classe e relatórios educacionais.
-- **Relatórios**: boletim, frequência e ata de resultados.
+- **Financeiro e Cobrança**: gestão de verbas e painel de inadimplentes com envio de Pix via WhatsApp.
 - **Configurações**: dados da instituição, controle de acessos e períodos letivos.
 
 ### Painel Root / BackOffice (`/ops`)

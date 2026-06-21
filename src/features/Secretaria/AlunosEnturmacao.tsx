@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { jsPDF } from 'jspdf';
-import { FileText, ArrowRight, Plus } from 'lucide-react';
+import { PDFGenerator } from '../../lib/pdfGenerator';
+import { FileText, ArrowRight, Plus, Download } from 'lucide-react';
 
 interface Aluno {
   id: string;
@@ -173,29 +173,31 @@ export const AlunosEnturmacao: React.FC = () => {
   const gerarTermoPDF = (aluno: Aluno, tipo: 'Transferido' | 'Expulso', dataSaida: string) => {
     if (!escolaAtiva) return;
 
-    const doc = new jsPDF();
-    const titulo = tipo === 'Transferido' ? 'TERMO DE TRANSFERÊNCIA' : 'ATA DE EXPULSÃO';
+    const generator = new PDFGenerator({
+      nome: escolaAtiva.escola.nome,
+      cnpj: escolaAtiva.escola.cnpj,
+    });
 
-    doc.setFontSize(18);
-    doc.text(titulo, 105, 20, { align: 'center' });
+    generator.gerarTermoMovimentacao(
+      { nome: aluno.nome, matricula: aluno.matricula, turmaAtual: aluno.turmaAtual },
+      tipo,
+      motivoSaida,
+      dataSaida
+    );
+  };
 
-    doc.setFontSize(12);
-    doc.text(`Escola: ${escolaAtiva.escola.nome}`, 20, 40);
-    doc.text(`CNPJ: ${escolaAtiva.escola.cnpj}`, 20, 50);
+  const gerarDeclaracaoMatricula = (aluno: Aluno) => {
+    if (!escolaAtiva) return;
 
-    doc.text(`Aluno(a): ${aluno.nome}`, 20, 70);
-    doc.text(`Matrícula: ${aluno.matricula}`, 20, 80);
-    doc.text(`Turma de Origem: ${aluno.turmaAtual}`, 20, 90);
+    const generator = new PDFGenerator({
+      nome: escolaAtiva.escola.nome,
+      cnpj: escolaAtiva.escola.cnpj,
+    });
 
-    doc.text('Motivo Registrado:', 20, 110);
-    const textLines = doc.splitTextToSize(motivoSaida || 'Não informado', 170);
-    doc.text(textLines, 20, 120);
-
-    doc.text(`Data de saída: ${dataSaida}`, 20, 150);
-    doc.text('________________________________________________', 105, 230, { align: 'center' });
-    doc.text('Assinatura da Direção/Secretaria', 105, 240, { align: 'center' });
-
-    doc.save(`${tipo}_${aluno.matricula}.pdf`);
+    generator.gerarDeclaracaoMatricula(
+      { nome: aluno.nome, matricula: aluno.matricula, turmaAtual: aluno.turmaAtual },
+      new Date().toLocaleDateString('pt-BR')
+    );
   };
 
   return (
@@ -339,10 +341,22 @@ export const AlunosEnturmacao: React.FC = () => {
 
         {alunoSelecionado && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-indigo-500">
-            <h3 className="font-bold text-lg mb-4 text-gray-800">Registrar Saída do Aluno</h3>
-            <p className="font-medium text-indigo-900 mb-6">{alunoSelecionado.nome}</p>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-bold text-lg text-gray-800">Ações do Aluno</h3>
+                <p className="font-medium text-indigo-900">{alunoSelecionado.nome}</p>
+              </div>
+              <button
+                onClick={() => gerarDeclaracaoMatricula(alunoSelecionado)}
+                className="flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-indigo-200"
+                title="Baixar Declaração de Matrícula PDF"
+              >
+                <Download size={16} /> Declaração de Matrícula
+              </button>
+            </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 border-t pt-4 mt-2">
+              <h4 className="font-semibold text-gray-800">Registrar Saída / Desligamento</h4>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Motivo / Observações</label>
                 <textarea

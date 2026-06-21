@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AppShell } from './components/AppShell';
 import { Login } from './pages/Login';
+import { PortalLayout } from './portal/PortalLayout';
+import { PortalDashboard } from './portal/PortalDashboard';
 import { EsqueciSenha } from './pages/EsqueciSenha';
 import { ResetPassword } from './pages/ResetPassword';
 
@@ -36,13 +38,18 @@ const ConfiguracoesRoot = lazy(() => import('./root/pages/ConfiguracoesRoot').th
 // Nosso guarda de rotas (HOC): se o componente ainda tiver dando loading ele mostra o texto,
 // e se não tiver 'user' ele manda logo pro /login usando o Navigate pra proteger a rota
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, escolaAtiva } = useAuth();
   if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  
+  if (escolaAtiva?.papel === 'Aluno') {
+    return <Navigate to="/portal/dashboard" replace />;
+  }
+  
   return <>{children}</>;
 };
 
-export const App = () => {
+export default function App() {
   // Fallback de carregamento para as rotas lazy
   const SuspenseFallback = (
     <div className="h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-[#0f1115]">
@@ -68,6 +75,11 @@ export const App = () => {
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            <Route path="/portal" element={<PortalLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<PortalDashboard />} />
+            </Route>
 
             <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
               <Route index element={<DashboardResumo />} />
@@ -110,6 +122,4 @@ export const App = () => {
       </BrowserRouter>
     </ErrorBoundary>
   );
-};
-
-export default App;
+}

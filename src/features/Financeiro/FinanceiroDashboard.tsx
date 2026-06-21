@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FileUp, CheckCircle } from 'lucide-react';
+import { FileUp, CheckCircle, AlertOctagon, Send, Copy, QrCode } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
+import { GeradorBoletos, DadosCobranca, FaturaGerada } from './GeradorBoletos';
 
 interface Movimentacao {
   id: string;
@@ -21,6 +22,29 @@ export const FinanceiroDashboard: React.FC = () => {
   const [pendencias, setPendencias] = useState<Movimentacao[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'geral' | 'inadimplentes'>('geral');
+  const [faturaGerada, setFaturaGerada] = useState<FaturaGerada | null>(null);
+  const [gerandoId, setGerandoId] = useState<string | null>(null);
+
+  const inadimplentes: DadosCobranca[] = [
+    { id_aluno: '1', nome_responsavel: 'Marcos Silva', telefone_responsavel: '11999999999', valor_pendente: 450.00, mes_referencia: 'Maio/2026' },
+    { id_aluno: '2', nome_responsavel: 'Ana Souza', telefone_responsavel: '11988888888', valor_pendente: 900.00, mes_referencia: 'Abril e Maio/2026' }
+  ];
+
+  const handleGerarCobranca = async (dados: DadosCobranca) => {
+    setGerandoId(dados.id_aluno);
+    try {
+      const fatura = await GeradorBoletos.gerarCobranca(dados);
+      const linkWa = GeradorBoletos.formatarMensagemWhatsApp(dados, fatura);
+      window.open(linkWa, '_blank');
+      setFaturaGerada(fatura);
+    } catch (e) {
+      alert('Erro ao gerar cobrança.');
+    } finally {
+      setGerandoId(null);
+    }
+  };
+
   const [formMovimentacao, setFormMovimentacao] = useState({
     id: '',
     categoria: '',
@@ -175,6 +199,84 @@ export const FinanceiroDashboard: React.FC = () => {
         </button>
       </div>
 
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('geral')}
+          className={`pb-4 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'geral' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          Visão Geral
+        </button>
+        <button
+          onClick={() => setActiveTab('inadimplentes')}
+          className={`pb-4 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'inadimplentes' ? 'border-rose-600 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          <AlertOctagon size={16} />
+          Inadimplentes
+        </button>
+      </div>
+
+      {activeTab === 'inadimplentes' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Painel de Inadimplência e Cobrança</h3>
+            <p className="text-sm text-gray-500 mb-6">Identifique parcelas atrasadas e gere PIX ou Boletos com envio automático via WhatsApp.</p>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Responsável</th>
+                    <th className="px-6 py-4 font-semibold text-center">Referência</th>
+                    <th className="px-6 py-4 font-semibold text-right">Valor Pendente</th>
+                    <th className="px-6 py-4 font-semibold text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inadimplentes.map(ind => (
+                    <tr key={ind.id_aluno} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium text-gray-900">{ind.nome_responsavel}</td>
+                      <td className="px-6 py-4 text-center text-rose-600 font-semibold">{ind.mes_referencia}</td>
+                      <td className="px-6 py-4 text-right font-bold text-gray-900">R$ {ind.valor_pendente.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleGerarCobranca(ind)}
+                          disabled={gerandoId === ind.id_aluno}
+                          className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          <Send size={14} />
+                          {gerandoId === ind.id_aluno ? 'Gerando...' : 'Cobrar WhatsApp'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {faturaGerada && (
+            <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 flex gap-6 items-start animate-fade-in">
+              <div className="bg-white p-2 rounded-xl shadow-sm">
+                <QrCode size={100} className="text-gray-800" />
+              </div>
+              <div>
+                <h4 className="text-emerald-800 font-bold text-lg mb-2">Fatura e PIX Gerados com Sucesso!</h4>
+                <p className="text-sm text-emerald-700 mb-4">O WhatsApp Web foi aberto com o texto de cobrança. Você também pode copiar os dados abaixo:</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-mono bg-white px-2 py-1 rounded border border-emerald-200 truncate max-w-md">{faturaGerada.chave_pix_copia_cola}</span>
+                  <button className="text-emerald-600 hover:text-emerald-800" title="Copiar PIX"><Copy size={16} /></button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono bg-white px-2 py-1 rounded border border-emerald-200 truncate max-w-md">{faturaGerada.link_pagamento}</span>
+                  <button className="text-emerald-600 hover:text-emerald-800" title="Copiar Link"><Copy size={16} /></button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'geral' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm min-h-[400px]">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Comparativo Receitas x Despesas</h3>
@@ -260,6 +362,7 @@ export const FinanceiroDashboard: React.FC = () => {
           <div className="text-sm text-gray-500">Esse valor considera apenas receitas e despesas aprovadas.</div>
         </div>
       </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -7,12 +7,7 @@ import type { User } from '@supabase/supabase-js';
 export type PerfilPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor' | 'Aluno';
 export type VinculoTipo = 'Efetivo' | 'Designado';
 
-// Helpers de permissão reutilizáveis
-export const PAPEIS_GESTAO = ['Admin', 'Diretor', 'Subdiretor', 'Secretaria'] as const;
-export const PAPEIS_DIRECAO = ['Admin', 'Diretor', 'Subdiretor'] as const;
-export const PAPEIS_ADMIN = ['Admin'] as const;
-
-export interface Escola {
+interface Escola {
   id: string;
   nome: string;
   cnpj: string;
