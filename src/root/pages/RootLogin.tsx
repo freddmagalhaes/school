@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useRootAuth } from '../../contexts/RootAuthContext';
 
 // ============================================================
 // RootLogin
@@ -17,58 +18,57 @@ export const RootLogin = () => {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  const { operador, user: rootUser } = useRootAuth();
+
+  // Se já estiver logado e autorizado, redireciona
+  React.useEffect(() => {
+    if (operador) {
+      navigate('/ops/dashboard', { replace: true });
+    }
+  }, [operador, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setCarregando(true);
     setErro(null);
 
     try {
-      // Começando o processo de login...
-      
-      // 1. Tenta autenticar o usuário no sistema de Auth do Supabase
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       });
 
-      // Se der erro no e-mail ou senha, a gente avisa o usuário
       if (authError || !data.session) {
         const msg = authError?.message || 'Erro desconhecido';
-
         if (msg.includes('Email not confirmed')) {
-          setErro('Opa! Parece que esse e-mail ainda não foi confirmado no banco de dados.');
+          setErro('E-mail não confirmado.');
         } else if (msg.includes('Invalid login credentials')) {
-          setErro('E-mail ou senha não conferem. Dá uma conferida e tenta de novo!');
+          setErro('E-mail ou senha inválidos.');
         } else {
-          setErro(`Tivemos um problema técnico: ${msg}`);
+          setErro(`Erro técnico: ${msg}`);
         }
+        setCarregando(false);
         return;
       }
-
-      // 2. Se o login deu certo, agora a gente checa se ele é um administrador autorizado
-      // Isso é importante pra ninguém comum entrar na área de gestão do sistema
-      const { data: operador, error: rootError } = await supabase
-        .from('root_admins')
-        .select('id, is_active')
-        .eq('id', data.session.user.id)
-        .single();
-
-      // Se ele não estiver na tabela de admins ou estiver inativo, barramos o acesso
-      if (rootError || !operador || !operador.is_active) {
-        await supabase.auth.signOut();
-        setErro('Acesso negado: Você não tem permissão de administrador ou seu acesso está desativado.');
-        return;
-      }
-
-      // Se chegou aqui, tá tudo certo! Levamos o admin para o painel de controle
-      navigate('/ops/dashboard', { replace: true });
+      
+      // Quando logar com sucesso, o RootAuthContext vai detectar a sessão via onAuthStateChange,
+      // fazer a verificação na tabela root_admins e preencher a variável 'operador'.
+      // Se não preencher, significa que ele não tem acesso. Apenas esperamos.
+      // Definimos um timeout de segurança caso ele não seja admin (para não ficar girando infinito).
+      setTimeout(() => {
+        setCarregando(false);
+        // Se após 3 segundos o operador não for preenchido (o useEffect acima não rodar),
+        // avisamos que não tem acesso e deslogamos.
+        supabase.from('root_admins').select('id').eq('id', data.session.user.id).single().then(({ data: adminData }) => {
+           if (!adminData) {
+             setErro('Acesso negado: Sem permissão no Backoffice.');
+             supabase.auth.signOut().catch(() => {});
+           }
+        });
+      }, 3000);
 
     } catch (err) {
-      // Esse catch pega erros inesperados, tipo falta de internet
-      setErro('Ih, tivemos um erro inesperado. Tenta atualizar a página!');
-      console.error('Erro no login:', err);
-    } finally {
-      // Terminando o carregamento, independente se deu certo ou errado
+      setErro('Ocorreu um erro inesperado.');
       setCarregando(false);
     }
   };

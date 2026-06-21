@@ -171,16 +171,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+      ]);
     } catch (err) {
-      console.error("Erro ao fazer logoff", err);
+      console.warn("Signout forçado via timeout ou erro:", err);
     } finally {
+      // Limpeza agressiva para não deixar locks órfãos ou cache corrompido
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('edugestao') || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
+          localStorage.removeItem(key);
+        }
+      });
+      localStorage.removeItem('escola_ativa_id');
       setUser(null);
       setPerfil(null);
       setMembros([]);
       setEscolaAtiva(null);
       setIsSystemRoot(false);
-      localStorage.removeItem('escola_ativa_id');
       window.location.href = '/login';
     }
   };

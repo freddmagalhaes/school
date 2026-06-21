@@ -135,10 +135,19 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+      ]);
     } catch (err) {
-      console.error('[RootAuth] Erro ao deslogar:', err);
+      console.warn('[RootAuth] Erro ao deslogar:', err);
     } finally {
+      // Limpa chaves do Supabase na unha para não corromper o cache na reentrada
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('edugestao') || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
+          localStorage.removeItem(key);
+        }
+      });
       setUser(null);
       setOperador(null);
       window.location.href = '/ops/login';
