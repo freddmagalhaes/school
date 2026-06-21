@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
@@ -64,14 +64,17 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [operador, setOperador] = useState<RootAdmin | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     // Escuta mudanças de sessão do Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchOperador(session.user.id);
+          // Se já carregamos uma vez, não mostra o loading de tela cheia novamente
+          const isSilent = event === 'TOKEN_REFRESH' || event === 'USER_UPDATED' || hasLoadedRef.current;
+          await fetchOperador(session.user.id, isSilent);
         } else {
           setOperador(null);
           setLoading(false);
@@ -93,9 +96,9 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Busca o operador na tabela root_admins e valida se está ativo
-  const fetchOperador = async (userId: string) => {
+  const fetchOperador = async (userId: string, isSilent = false) => {
     try {
-      setLoading(true);
+      if (!isSilent && !hasLoadedRef.current) setLoading(true);
       const { data, error } = await supabase
         .from('root_admins')
         .select('*')
@@ -115,6 +118,7 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setOperador(data as RootAdmin);
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error('[RootAuth] Erro ao buscar operador:', err);
       setOperador(null);

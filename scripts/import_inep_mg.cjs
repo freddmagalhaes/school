@@ -64,9 +64,13 @@ rl.on('line', (line) => {
 rl.on('close', () => {
   console.log(`Leitura concluída. ${results.length} escolas de MG encontradas.`);
   
-  let sqlOutput = `-- Arquivo gerado automaticamente para importar escolas de MG\n\n`;
-  
   const chunkSize = 500;
+  const maxRecordsPerFile = 5000;
+  let fileIndex = 1;
+  let currentFileRecords = 0;
+  
+  let currentOutputFile = path.join(__dirname, `../supabase/seed_inep_mg_parte${fileIndex}.sql`);
+  let sqlOutput = `-- Arquivo parte ${fileIndex} gerado automaticamente\n\n`;
   
   for (let i = 0; i < results.length; i += chunkSize) {
     const chunk = results.slice(i, i + chunkSize);
@@ -87,8 +91,17 @@ rl.on('close', () => {
     });
     
     sqlOutput += values.join(',\n') + `\nON CONFLICT (codigo_inep) DO NOTHING;\n\n`;
+    currentFileRecords += chunk.length;
+    
+    // Se atingiu o limite por arquivo, salva e cria o próximo
+    if (currentFileRecords >= maxRecordsPerFile || i + chunkSize >= results.length) {
+      fs.writeFileSync(currentOutputFile, sqlOutput);
+      console.log(`Script SQL salvo: seed_inep_mg_parte${fileIndex}.sql`);
+      
+      fileIndex++;
+      currentFileRecords = 0;
+      currentOutputFile = path.join(__dirname, `../supabase/seed_inep_mg_parte${fileIndex}.sql`);
+      sqlOutput = `-- Arquivo parte ${fileIndex} gerado automaticamente\n\n`;
+    }
   }
-  
-  fs.writeFileSync(outputFile, sqlOutput);
-  console.log(`Script SQL gerado com sucesso em: ${outputFile}`);
 });
