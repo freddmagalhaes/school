@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { StatusBadge } from '../../components/StatusBadge';
-import { Search, Filter, Edit2, Plus, Trash2 } from 'lucide-react';
+import { Search, Filter, Edit2, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { formatarCPF, validarCPF } from '../../utils/validators';
+import { mascararCPF } from '../../utils/masker';
+import { registrarLogAuditoria } from '../../lib/logger';
 
 type ProfissionalPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor';
 
@@ -24,6 +26,7 @@ interface Profissional {
    const [filtroVinculo, setFiltroVinculo] = useState<string>('Todos');
    const [busca, setBusca] = useState<string>('');
    const [profissionais, setProfissionais] = useState<Profissional[]>([]);
+   const [cpfsRevelados, setCpfsRevelados] = useState<Record<string, boolean>>({});
    const [loading, setLoading] = useState(false);
    const [showModal, setShowModal] = useState(false);
    const [showCreateModal, setShowCreateModal] = useState(false);
@@ -168,6 +171,25 @@ interface Profissional {
     return matchBusca && matchVinculo;
   });
 
+  const toggleMostrarCpf = async (profId: string, cpf: string, nome: string) => {
+    const isRevelado = cpfsRevelados[profId];
+    
+    if (!isRevelado) {
+      if (escolaAtiva) {
+        await registrarLogAuditoria(escolaAtiva.escola_id, 'VISUALIZOU_CPF_RH', {
+          alvo_id: profId,
+          alvo_nome: nome,
+          tela: 'RH Dashboard'
+        });
+      }
+    }
+
+    setCpfsRevelados(prev => ({
+      ...prev,
+      [profId]: !isRevelado
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -251,7 +273,22 @@ interface Profissional {
                           </div>
                           <div className="ml-3">
                             <p className="text-sm font-medium text-gray-900">{prof.nome}</p>
-                            <p className="text-xs text-gray-500">{prof.cpf}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-500">
+                                {prof.cpf && prof.cpf !== 'N/A' 
+                                  ? (cpfsRevelados[prof.id] ? prof.cpf : mascararCPF(prof.cpf)) 
+                                  : 'N/A'}
+                              </p>
+                              {prof.cpf && prof.cpf !== 'N/A' && (
+                                <button 
+                                  onClick={() => toggleMostrarCpf(prof.id, prof.cpf, prof.nome)}
+                                  title={cpfsRevelados[prof.id] ? "Ocultar CPF" : "Revelar CPF (Ação auditada)"}
+                                  className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                >
+                                  {cpfsRevelados[prof.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>

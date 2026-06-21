@@ -5,9 +5,11 @@ import type { PerfilPapel } from '../../contexts/AuthContext';
 import { useEscolaAtual } from '../../hooks/useEscolaAtual';
 import { RootEscolaSelector } from '../../components/RootEscolaSelector';
 import {
-  UsersRound, Plus, Search, UserX, Shield, Mail, User
+  UsersRound, Plus, Search, UserX, Shield, Mail, User, Eye, EyeOff
 } from 'lucide-react';
 import { formatarCPF, validarCPF } from '../../utils/validators';
+import { mascararCPF } from '../../utils/masker';
+import { registrarLogAuditoria } from '../../lib/logger';
 
 type VinculoTipo = 'Efetivo' | 'Designado';
 
@@ -51,6 +53,7 @@ export const GestaoUsuarios: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState('');
   const [filtroPapel, setFiltroPapel] = useState<string>('Todos');
+  const [cpfsRevelados, setCpfsRevelados] = useState<Record<string, boolean>>({});
 
   const [showModal, setShowModal] = useState(false);
   const [editingMembro, setEditingMembro] = useState<MembroLista | null>(null);
@@ -207,6 +210,26 @@ export const GestaoUsuarios: React.FC = () => {
     return nomeMatch && papelMatch;
   });
 
+  const toggleMostrarCpf = async (membroId: string, donoCpfId: string, nome: string) => {
+    const isRevelado = cpfsRevelados[membroId];
+    
+    if (!isRevelado) {
+      // Registra a auditoria ANTES de mostrar
+      if (escolaId) {
+        await registrarLogAuditoria(escolaId, 'VISUALIZOU_CPF_USUARIO', {
+          alvo_id: donoCpfId,
+          alvo_nome: nome,
+          tela: 'Gestão de Usuários'
+        });
+      }
+    }
+
+    setCpfsRevelados(prev => ({
+      ...prev,
+      [membroId]: !isRevelado
+    }));
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
@@ -295,7 +318,22 @@ export const GestaoUsuarios: React.FC = () => {
                             <span className="font-medium text-gray-900">{m.perfis?.nome || '—'}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-gray-500">{m.perfis?.cpf || '—'}</td>
+                        <td className="px-5 py-3.5 text-gray-500">
+                          {m.perfis?.cpf ? (
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {cpfsRevelados[m.id] ? m.perfis.cpf : mascararCPF(m.perfis.cpf)}
+                              </span>
+                              <button 
+                                onClick={() => toggleMostrarCpf(m.id, m.perfis!.id, m.perfis!.nome)}
+                                title={cpfsRevelados[m.id] ? "Ocultar CPF" : "Revelar CPF (Ação auditada)"}
+                                className="text-gray-400 hover:text-indigo-600 transition-colors"
+                              >
+                                {cpfsRevelados[m.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                              </button>
+                            </div>
+                          ) : '—'}
+                        </td>
                         <td className="px-5 py-3.5">
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.color}`}>
                             {cfg.label}

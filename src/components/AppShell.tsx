@@ -6,9 +6,10 @@ import {
   GraduationCap, Users, UserPlus, UserCog, PiggyBank, 
   Settings, LogOut, LayoutDashboard, UsersRound, BarChart3, ShieldCheck
 } from 'lucide-react';
+import { TermosAceiteModal } from './LGPD/TermosAceiteModal';
 
 export const AppShell: React.FC = () => {
-  const { escolaAtiva, isSystemRoot, user, signOut, membros, loading } = useAuth();
+  const { escolaAtiva, isSystemRoot, user, perfil, signOut, membros, loading } = useAuth();
   const papel = escolaAtiva?.papel;
   const podeSelecionarEscola = membros.length > 1;
 
@@ -198,6 +199,9 @@ export const AppShell: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Modal de LGPD */}
+      {perfil && !perfil.aceitou_termos_em && <TermosAceiteModal />}
     </div>
   );
 };

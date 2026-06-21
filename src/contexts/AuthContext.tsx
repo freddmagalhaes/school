@@ -3,6 +3,13 @@ import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
+export interface UserPerfil {
+  id: string;
+  nome: string;
+  cpf: string;
+  aceitou_termos_em: string | null;
+}
+
 // Tipos base de nossa aplicação
 export type PerfilPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor' | 'Aluno';
 export type VinculoTipo = 'Efetivo' | 'Designado';
@@ -24,18 +31,21 @@ export interface MembroEscola {
 
 interface AuthContextType {
   user: User | null;
+  perfil: UserPerfil | null;
   membros: MembroEscola[];
   escolaAtiva: MembroEscola | null;
   isSystemRoot: boolean;
   setEscolaAtiva: (membro: MembroEscola) => void;
   loading: boolean;
   signOut: () => Promise<void>;
+  recarregarPerfil: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [perfil, setPerfil] = useState<UserPerfil | null>(null);
   const [membros, setMembros] = useState<MembroEscola[]>([]);
   const [escolaAtiva, setEscolaAtiva] = useState<MembroEscola | null>(null);
   const [isSystemRoot, setIsSystemRoot] = useState(false);
@@ -48,8 +58,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           checkSystemRoot(session.user.id);
+          fetchPerfil(session.user.id);
           fetchMembros(session.user.id);
         } else {
+          setPerfil(null);
           setMembros([]);
           setEscolaAtiva(null);
           setIsSystemRoot(false);
@@ -63,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkSystemRoot(session.user.id);
+        fetchPerfil(session.user.id);
         fetchMembros(session.user.id);
       } else {
         setLoading(false);
@@ -90,6 +103,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (e) {
       setIsSystemRoot(false);
+    }
+  };
+
+  const fetchPerfil = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('perfis')
+        .select('id, nome, cpf, aceitou_termos_em')
+        .eq('id', userId)
+        .single();
+        
+      if (!error && data) {
+        setPerfil(data as UserPerfil);
+      }
+    } catch (e) {
+      console.error('Erro ao buscar perfil:', e);
+    }
+  };
+
+  const recarregarPerfil = async () => {
+    if (user) {
+      await fetchPerfil(user.id);
     }
   };
 
@@ -143,12 +178,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
+      perfil,
       membros,
       escolaAtiva,
       isSystemRoot,
       setEscolaAtiva: handleSetEscolaAtiva,
       loading,
-      signOut
+      signOut,
+      recarregarPerfil
     }}>
       {children}
     </AuthContext.Provider>
