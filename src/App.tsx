@@ -30,6 +30,7 @@ const RelatoriosDashboard = lazy(() => import('./features/Relatorios/RelatoriosD
 // ---- Lazy Loaded Features (BackOffice) ----
 const RootDashboard = lazy(() => import('./root/pages/RootDashboard').then(m => ({ default: m.RootDashboard })));
 const ClientesRoot = lazy(() => import('./root/pages/ClientesRoot').then(m => ({ default: m.ClientesRoot })));
+const LeadsINEP = lazy(() => import('./ops/pages/LeadsINEP').then(m => ({ default: m.LeadsINEP })));
 const ClienteDetalhe = lazy(() => import('./root/pages/ClienteDetalhe').then(m => ({ default: m.ClienteDetalhe })));
 const FinanceiroRoot = lazy(() => import('./root/pages/FinanceiroRoot').then(m => ({ default: m.FinanceiroRoot })));
 const EquipeRoot = lazy(() => import('./root/pages/EquipeRoot').then(m => ({ default: m.EquipeRoot })));
@@ -108,6 +109,7 @@ export default function App() {
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard"    element={<RootDashboard />} />
                   <Route path="clientes"     element={<ClientesRoot />} />
+                  <Route path="leads"        element={<LeadsINEP />} />
                   <Route path="clientes/:id" element={<ClienteDetalhe />} />
                   <Route path="financeiro"   element={<FinanceiroRoot />} />
                   <Route path="equipe"       element={<EquipeRoot />} />

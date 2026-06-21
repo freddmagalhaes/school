@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FileUp, CheckCircle, AlertOctagon, Send, Copy, QrCode } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
-import { GeradorBoletos, DadosCobranca, FaturaGerada } from './GeradorBoletos';
+import { GeradorBoletos } from './GeradorBoletos';
+import type { DadosCobranca, FaturaGerada } from './GeradorBoletos';
 
 interface Movimentacao {
   id: string;
@@ -277,91 +278,93 @@ export const FinanceiroDashboard: React.FC = () => {
       )}
 
       {activeTab === 'geral' && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm min-h-[400px]">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Comparativo Receitas x Despesas</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
-                <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" />
-                <Bar dataKey="Entradas" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Saidas" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {loading && <p className="text-sm text-gray-500 mt-4">Atualizando dados financeiros...</p>}
-        </div>
-
-        <div className="col-span-1 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Aprovações Pendentes</h3>
-          <p className="text-xs text-gray-500 mb-4">Pagamentos aguardando validação do gestor.</p>
-
-          <div className="space-y-4">
-            {pendencias.length === 0 ? (
-              <div className="p-6 rounded-xl bg-emerald-50 text-emerald-700 text-sm">
-                Nenhuma pendência financeira no momento.
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm min-h-[400px]">
+              <h3 className="text-lg font-bold text-gray-800 mb-6">Comparativo Receitas x Despesas</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
+                    <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend iconType="circle" />
+                    <Bar dataKey="Entradas" fill="#10B981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Saidas" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            ) : (
-              pendencias.map((pag) => (
-                <div key={pag.id} className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                  <div className="flex justify-between items-start mb-2 gap-4">
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{pag.categoria}</p>
-                      <p className="text-xs text-gray-500">Registrado em {format(new Date(pag.data_registro), 'dd/MM/yyyy')}</p>
-                    </div>
-                    <p className="font-bold text-red-600 font-mono">R$ {pag.valor.toFixed(2)}</p>
-                  </div>
+              {loading && <p className="text-sm text-gray-500 mt-4">Atualizando dados financeiros...</p>}
+            </div>
 
-                  <div className="flex flex-col gap-2">
-                    {podeAprovar ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          onClick={() => aprovarPendencia(pag.id)}
-                          className="flex items-center justify-center gap-1 bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 py-1.5 rounded text-xs font-semibold transition-colors"
-                        >
-                          <CheckCircle size={14} /> Autorizar
-                        </button>
+            <div className="col-span-1 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Aprovações Pendentes</h3>
+              <p className="text-xs text-gray-500 mb-4">Pagamentos aguardando validação do gestor.</p>
+
+              <div className="space-y-4">
+                {pendencias.length === 0 ? (
+                  <div className="p-6 rounded-xl bg-emerald-50 text-emerald-700 text-sm">
+                    Nenhuma pendência financeira no momento.
+                  </div>
+                ) : (
+                  pendencias.map((pag) => (
+                    <div key={pag.id} className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+                      <div className="flex justify-between items-start mb-2 gap-4">
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{pag.categoria}</p>
+                          <p className="text-xs text-gray-500">Registrado em {format(new Date(pag.data_registro), 'dd/MM/yyyy')}</p>
+                        </div>
+                        <p className="font-bold text-red-600 font-mono">R$ {pag.valor.toFixed(2)}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        {podeAprovar ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <button
+                              onClick={() => aprovarPendencia(pag.id)}
+                              className="flex items-center justify-center gap-1 bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 py-1.5 rounded text-xs font-semibold transition-colors"
+                            >
+                              <CheckCircle size={14} /> Autorizar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleEditarMovimentacao(pag)}
+                              className="flex items-center justify-center gap-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 py-1.5 rounded text-xs font-semibold transition-colors"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                            Aguardando Diretor
+                          </span>
+                        )}
                         <button
                           type="button"
-                          onClick={() => handleEditarMovimentacao(pag)}
-                          className="flex items-center justify-center gap-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 py-1.5 rounded text-xs font-semibold transition-colors"
+                          onClick={() => handleExcluirMovimentacao(pag.id)}
+                          className="text-xs text-red-600 hover:text-red-800 font-semibold self-start"
                         >
-                          Editar
+                          Excluir movimentação
                         </button>
                       </div>
-                    ) : (
-                      <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded">
-                        Aguardando Diretor
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleExcluirMovimentacao(pag.id)}
-                      className="text-xs text-red-600 hover:text-red-800 font-semibold self-start"
-                    >
-                      Excluir movimentação
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-        <div className="flex justify-between items-center gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Saldo líquido aprovado</p>
-            <p className="text-3xl font-bold text-gray-900">R$ {saldoAprovado.toFixed(2)}</p>
+          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <div className="flex justify-between items-center gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Saldo líquido aprovado</p>
+                <p className="text-3xl font-bold text-gray-900">R$ {saldoAprovado.toFixed(2)}</p>
+              </div>
+              <div className="text-sm text-gray-500">Esse valor considera apenas receitas e despesas aprovadas.</div>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Esse valor considera apenas receitas e despesas aprovadas.</div>
-        </div>
-      </div>
+        </>
       )}
 
       {showModal && (
