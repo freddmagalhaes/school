@@ -7,6 +7,7 @@ import { RootEscolaSelector } from '../../components/RootEscolaSelector';
 import {
   UsersRound, Plus, Search, UserX, Shield, Mail, User
 } from 'lucide-react';
+import { formatarCPF, validarCPF } from '../../utils/validators';
 
 type VinculoTipo = 'Efetivo' | 'Designado';
 
@@ -86,6 +87,13 @@ export const GestaoUsuarios: React.FC = () => {
     setSalvando(true);
     setFeedback('');
 
+    if (form.cpf && !validarCPF(form.cpf)) {
+      setFeedbackTipo('erro');
+      setFeedback('O CPF informado é inválido. Por favor, verifique.');
+      setSalvando(false);
+      return;
+    }
+
     try {
       // Chama a Edge Function que usa service_role internamente
       const { data, error } = await supabase.functions.invoke('create-school-user', {
@@ -141,6 +149,13 @@ export const GestaoUsuarios: React.FC = () => {
     if (!escolaId) return;
     setSalvando(true);
     setFeedback('');
+
+    if (form.cpf && !validarCPF(form.cpf)) {
+      setFeedbackTipo('erro');
+      setFeedback('O CPF informado é inválido. Por favor, verifique.');
+      setSalvando(false);
+      return;
+    }
 
     try {
       if (editingMembro) {
@@ -342,7 +357,7 @@ export const GestaoUsuarios: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF</label>
-                  <input type="text" value={form.cpf} onChange={e => setForm({ ...form, cpf: e.target.value })}
+                  <input type="text" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })}
                     className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
                     placeholder="000.000.000-00" maxLength={14} />
                 </div>

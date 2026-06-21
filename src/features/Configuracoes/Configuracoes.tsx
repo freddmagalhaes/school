@@ -5,6 +5,7 @@ import {
   Building2, ShieldAlert, Settings, Save, 
   CheckCircle2, UserPlus, Lock, Calendar, Plus, Trash2
 } from 'lucide-react';
+import { formatarCNPJ, formatarCPF, validarCNPJ, validarCPF } from '../../utils/validators';
 
 type Tab = 'dados' | 'acessos' | 'preferencias' | 'periodos';
 
@@ -76,7 +77,6 @@ export const Configuracoes: React.FC = () => {
   const [gerando, setGerando] = useState(false);
 
   // Verificação de Acesso (Level Access)
-  // O AppShell já restringe a rota para 'Admin', mas por precaução e para mostrar o "level access":
   const isAdmin = escolaAtiva?.papel === 'Admin';
   const podeEditar = isAdmin || isSystemRoot; 
 
@@ -141,6 +141,12 @@ export const Configuracoes: React.FC = () => {
   const handleSalvarAcesso = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!escolaAtiva) return;
+
+    if (acessoForm.cpf && !validarCPF(acessoForm.cpf)) {
+      setAcessoError('O CPF informado é inválido.');
+      return;
+    }
+
     setSavingAcesso(true);
     setAcessoError('');
 
@@ -152,7 +158,6 @@ export const Configuracoes: React.FC = () => {
           .eq('id', editingAcessoId);
 
         if (error) throw error;
-        // Atualização concluída com sucesso.
       } else {
         const { data, error } = await supabase.functions.invoke('create-school-user', {
           body: {
@@ -167,7 +172,6 @@ export const Configuracoes: React.FC = () => {
 
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
-        // Convite enviado com sucesso.
       }
 
       carregarUsuarios();
@@ -201,12 +205,10 @@ export const Configuracoes: React.FC = () => {
   const handleGerarPeriodos = async () => {
     if (!escolaAtiva || !podeEditar) return;
     setGerando(true);
-    // Remove periodos existentes do ano
     await supabase.from('periodos_letivos')
       .delete()
       .eq('escola_id', escolaAtiva.escola_id)
       .eq('ano_letivo', anoLetivoP);
-    // Insere o modelo selecionado
     const modelo = MODELOS_PERIODO[modeloSelecionado];
     const inserts = modelo.periodos.map(p => ({
       escola_id: escolaAtiva.escola_id,
@@ -235,6 +237,11 @@ export const Configuracoes: React.FC = () => {
     e.preventDefault();
     if (!podeEditar || !escolaAtiva) return;
     
+    if (escolaCnpj && !validarCNPJ(escolaCnpj)) {
+      alert('O CNPJ da escola é inválido. Por favor, verifique.');
+      return;
+    }
+
     setSaving(true);
     setSuccessMsg('');
     
@@ -267,7 +274,6 @@ export const Configuracoes: React.FC = () => {
         <p className="text-sm text-gray-500">Gerencie as preferências e dados da unidade: {escolaAtiva?.escola.nome}</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab('dados')}
@@ -315,7 +321,6 @@ export const Configuracoes: React.FC = () => {
         </button>
       </div>
 
-      {/* Success Feedback */}
       {successMsg && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-4 flex items-center gap-3">
           <CheckCircle2 size={20} className="text-emerald-600" />
@@ -323,7 +328,6 @@ export const Configuracoes: React.FC = () => {
         </div>
       )}
 
-      {/* Warning Acesso Negado (caso um usuário sem permissão chegasse aqui) */}
       {!podeEditar && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4 flex items-center gap-3">
           <Lock size={20} className="text-amber-600" />
@@ -331,10 +335,8 @@ export const Configuracoes: React.FC = () => {
         </div>
       )}
 
-      {/* Conteúdo das Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         
-        {/* TAB: DADOS DA INSTITUIÇÃO */}
         {activeTab === 'dados' && (
           <form onSubmit={handleSave} className="p-6 space-y-6">
             <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-2">Informações Cadastrais</h3>
@@ -356,8 +358,10 @@ export const Configuracoes: React.FC = () => {
                 <input
                   type="text"
                   value={escolaCnpj}
-                  onChange={e => setEscolaCnpj(e.target.value)}
+                  onChange={e => setEscolaCnpj(formatarCNPJ(e.target.value))}
                   disabled={!podeEditar}
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
                   required
                 />
@@ -388,7 +392,6 @@ export const Configuracoes: React.FC = () => {
           </form>
         )}
 
-        {/* TAB: CONTROLE DE ACESSOS */}
         {activeTab === 'acessos' && (
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -484,7 +487,6 @@ export const Configuracoes: React.FC = () => {
           </div>
         )}
 
-        {/* Acesso modal */}
         {showAcessoModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
             <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Search, Filter, Edit2, Plus, Trash2 } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
+import { formatarCPF, validarCPF } from '../../utils/validators';
 
 type ProfissionalPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor';
 
@@ -123,6 +124,12 @@ interface Profissional {
     if (!escolaAtiva) return;
     setSalvandoNovoProfissional(true);
     setCreateError('');
+
+    if (novoProfissional.cpf && !validarCPF(novoProfissional.cpf)) {
+      setCreateError('O CPF informado é inválido. Por favor, verifique.');
+      setSalvandoNovoProfissional(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke('create-school-user', {
@@ -337,9 +344,10 @@ interface Profissional {
                   <label className="block text-sm font-medium text-gray-700">CPF</label>
                   <input
                     value={novoProfissional.cpf}
-                    onChange={(e) => setNovoProfissional((prev) => ({ ...prev, cpf: e.target.value }))}
+                    onChange={(e) => setNovoProfissional((prev) => ({ ...prev, cpf: formatarCPF(e.target.value) }))}
                     className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                     placeholder="000.000.000-00"
+                    maxLength={14}
                   />
                 </div>
                 <div>
