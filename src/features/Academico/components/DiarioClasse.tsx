@@ -87,7 +87,7 @@ export const DiarioClasse: React.FC = () => {
     setMsgStatus('');
 
     const { data: matriculasData } = await supabase
-      .from('matriculas')
+      .from('turma_alunos')
       .select('id, perfis:aluno_id (id, nome)')
       .eq('turma_id', t.turma_id)
       .eq('status', 'Ativo');
