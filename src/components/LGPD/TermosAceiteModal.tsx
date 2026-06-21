@@ -4,7 +4,7 @@ import { ShieldCheck, FileText, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const TermosAceiteModal: React.FC = () => {
-  const { user, recarregarPerfil } = useAuth();
+  const { user, setTermosAceitos } = useAuth();
   const [aceito, setAceito] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -15,6 +15,7 @@ export const TermosAceiteModal: React.FC = () => {
     setErro('');
 
     try {
+      // Tenta atualizar no banco (pode afetar 0 linhas se perfil não existir, mas não gera erro 403 de INSERT)
       const { error } = await supabase
         .from('perfis')
         .update({ aceitou_termos_em: new Date().toISOString() })
@@ -22,7 +23,8 @@ export const TermosAceiteModal: React.FC = () => {
 
       if (error) throw error;
 
-      await recarregarPerfil();
+      // Destranca a UI localmente sem precisar fazer fetch de novo
+      setTermosAceitos();
     } catch (err: any) {
       setErro('Erro ao registrar o aceite. Tente novamente.');
       setSalvando(false);

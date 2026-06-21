@@ -108,14 +108,14 @@ export const AppShell: React.FC = () => {
               key={menu.path}
               to={menu.path}
               className={({ isActive }) => 
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                `group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
-                  ? 'bg-indigo-600 text-white shadow-md font-medium translate-x-1' 
+                  ? 'active bg-indigo-600 text-white shadow-md font-medium translate-x-1' 
                   : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`
               }
             >
-              <menu.icon size={18} className={({ isActive }: any) => isActive ? 'text-white' : 'text-slate-400'} />
+              <menu.icon size={18} className="group-[.active]:text-white text-inherit" />
               {menu.name}
             </NavLink>
           ))}

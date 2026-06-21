@@ -39,6 +39,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   recarregarPerfil: () => Promise<void>;
+  setTermosAceitos: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('is_root, role')
         .eq('id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
       
       if (data && (data.is_root || data.role === 'root' || data.role === 'super_admin')) {
         setIsSystemRoot(true);
@@ -112,10 +113,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('perfis')
         .select('id, nome, cpf, aceitou_termos_em')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (!error && data) {
         setPerfil(data as UserPerfil);
+      } else if (!error && !data) {
+        // Se não existir perfil, criamos um falso apenas para o estado
+        // O modal cuidará de fazer o UPSERT depois
+        setPerfil({
+          id: userId,
+          nome: 'Usuário',
+          cpf: '',
+          aceitou_termos_em: null
+        });
       }
     } catch (e) {
       console.error('Erro ao buscar perfil:', e);
@@ -126,6 +136,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       await fetchPerfil(user.id);
     }
+  };
+
+  const setTermosAceitos = () => {
+    setPerfil(prev => prev ? { ...prev, aceitou_termos_em: new Date().toISOString() } : null);
   };
 
   const fetchMembros = async (userId: string) => {
@@ -204,7 +218,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setEscolaAtiva: handleSetEscolaAtiva,
       loading,
       signOut,
-      recarregarPerfil
+      recarregarPerfil,
+      setTermosAceitos
     }}>
       {children}
     </AuthContext.Provider>
