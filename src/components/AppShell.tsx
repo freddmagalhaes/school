@@ -91,112 +91,113 @@ export const AppShell: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-indigo-900 text-indigo-100 flex flex-col shadow-xl">
-        <div className="p-4 bg-indigo-950 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
-            <GraduationCap size={20} className="text-white" />
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl z-20">
+        <div className="p-5 bg-slate-950/50 flex items-center gap-3 border-b border-slate-800">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <GraduationCap size={22} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-lg leading-tight">EduGestão Pro</h1>
-            <p className="text-xs text-indigo-300">Gestão Escolar</p>
+            <h1 className="font-bold text-white text-lg tracking-tight">EduGestão <span className="text-indigo-400">Pro</span></h1>
+            <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Gestão Escolar</p>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
           {visibleMenus.map((menu) => (
             <NavLink
               key={menu.path}
               to={menu.path}
               className={({ isActive }) => 
-                `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                   isActive 
-                  ? 'bg-indigo-800 text-white font-medium' 
-                  : 'text-indigo-200 hover:bg-indigo-800/50 hover:text-white'
+                  ? 'bg-indigo-600 text-white shadow-md font-medium translate-x-1' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`
               }
             >
-              <menu.icon size={18} />
+              <menu.icon size={18} className={({ isActive }: any) => isActive ? 'text-white' : 'text-slate-400'} />
               {menu.name}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-indigo-800">
+        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
           <button 
             onClick={signOut}
-            className="flex items-center gap-3 px-3 py-2 w-full text-left rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 w-full text-left rounded-lg text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
           >
             <LogOut size={18} />
-            Sair
+            Encerrar Sessão
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/50">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
+        <header className="h-[72px] glass-panel border-b border-gray-200 flex items-center justify-between px-8 z-10 sticky top-0">
           <div className="flex items-center gap-4">
-          {/* School Selector is usually better highlighted, but since it's a structural necessity, let's put it in the header for easy access */}
           {loading ? (
-            <div className="text-gray-500 text-sm">Carregando contexto...</div>
+            <div className="text-gray-400 text-sm font-medium animate-pulse">Carregando contexto...</div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {podeSelecionarEscola && (
-                <div className="bg-indigo-600 rounded-lg p-1.5 shadow-sm">
+                <div className="bg-white rounded-xl p-1 shadow-sm border border-gray-100">
                   <SchoolSelector />
                 </div>
               )}
 
               {escolaAtiva ? (
                 <>
-                  <div className="h-6 w-px bg-gray-300" />
-                  <div className="text-sm">
-                    <span className="text-gray-500">Perfil de </span>
-                    <span className="font-bold text-indigo-900">{escolaAtiva.papel}</span>
+                  <div className="h-6 w-px bg-gray-200" />
+                  <div className="text-sm bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
+                    <span className="text-gray-500">Perfil:</span>
+                    <span className="font-bold text-indigo-600">{escolaAtiva.papel}</span>
                   </div>
                 </>
               ) : isSystemRoot ? (
-                <div className="rounded-3xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700 flex items-center gap-3">
+                <div className="rounded-full bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-700 flex items-center gap-3 shadow-sm">
                   <ShieldCheck size={18} className="text-amber-500" />
                   <div>
-                    <p className="font-semibold">Usuário Root ativo</p>
-                    <Link to="/ops/dashboard" className="text-amber-700 font-semibold underline">
-                      Ir para o Backoffice de Pagamentos e Clientes
+                    <span className="font-bold mr-2">Root Access</span>
+                    <Link to="/ops/dashboard" className="text-amber-700 font-medium underline hover:text-amber-800">
+                      Ir para Backoffice
                     </Link>
                   </div>
                 </div>
               ) : (
-                <div className="rounded-3xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600">
-                  Nenhuma escola ativa selecionada. Selecione a escola no seletor quando disponível.
+                <div className="rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm text-slate-500 font-medium">
+                  Selecione uma escola para iniciar
                 </div>
               )}
             </div>
           )}
         </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {isSystemRoot && (
               <Link
                 to="/ops/dashboard"
-                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-amber-400 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-600 hover:bg-amber-100 transition-colors"
+                className="hidden sm:inline-flex items-center gap-2 rounded-full border-2 border-amber-400 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-600 hover:bg-amber-400 hover:text-white transition-all duration-300 shadow-sm"
               >
                 <ShieldCheck size={14} /> Backoffice
               </Link>
             )}
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-              <p className="text-xs text-gray-500">Logado</p>
+              <p className="text-sm font-bold text-slate-800">{user?.email}</p>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Online</p>
             </div>
-            <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm ring-2 ring-indigo-50">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6 bg-gray-50">
-          <Outlet />
+        <main className="flex-1 overflow-auto p-8 bg-slate-50/50 animate-fade-in custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
 

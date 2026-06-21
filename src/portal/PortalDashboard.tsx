@@ -160,47 +160,47 @@ export const PortalDashboard: React.FC = () => {
         
         {/* Coluna Principal: Boletim */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="border-b border-gray-100 bg-gray-50 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden hover-lift">
+            <div className="border-b border-gray-100 bg-gray-50 px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <BookOpen className="text-indigo-600" size={24} />
-                <h3 className="text-lg font-bold text-gray-900">Boletim Escolar</h3>
+                <h3 className="text-xl font-bold text-gray-900">Boletim Escolar</h3>
               </div>
-              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">Ano Atual</span>
+              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Ano Atual</span>
             </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-500 uppercase bg-white border-b">
+                <thead className="text-xs text-gray-500 uppercase bg-white border-b border-gray-100">
                   <tr>
-                    <th className="px-6 py-4 font-semibold">Disciplina</th>
-                    <th className="px-6 py-4 font-semibold text-center">Nota / Média</th>
-                    <th className="px-6 py-4 font-semibold text-center">Situação</th>
+                    <th className="px-6 py-4 font-bold tracking-wide">Disciplina</th>
+                    <th className="px-6 py-4 font-bold tracking-wide text-center">Nota / Média</th>
+                    <th className="px-6 py-4 font-bold tracking-wide text-center">Situação</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">Carregando boletim...</td></tr>
+                    <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500 font-medium animate-pulse">Carregando boletim...</td></tr>
                   ) : notasAgrupadas.length === 0 ? (
-                    <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">Nenhuma nota lançada para a turma {turmaNome}.</td></tr>
+                    <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500 font-medium">Nenhuma nota lançada para a turma {turmaNome}.</td></tr>
                   ) : (
                     notasAgrupadas.map((nota, idx) => {
                       const valorNumerico = parseFloat(nota.bim1 as string);
                       const isAbaixo = !isNaN(valorNumerico) && valorNumerico < 6.0;
 
                       return (
-                        <tr key={idx} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 font-medium text-gray-900">{nota.disciplina}</td>
-                          <td className={`px-6 py-4 text-center font-bold ${isAbaixo ? 'text-red-600' : 'text-indigo-600'}`}>
+                        <tr key={idx} className="border-b border-gray-50 last:border-0 hover:bg-indigo-50/30 transition-colors">
+                          <td className="px-6 py-4 font-bold text-gray-800">{nota.disciplina}</td>
+                          <td className={`px-6 py-4 text-center font-black text-lg ${isAbaixo ? 'text-red-500' : 'text-indigo-600'}`}>
                             {nota.bim1}
                           </td>
                           <td className="px-6 py-4 text-center">
                             {nota.bim1 === '-' ? (
                               <span className="text-gray-400">-</span>
                             ) : isAbaixo ? (
-                              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-medium">Abaixo da Média</span>
+                              <span className="bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-bold">Abaixo da Média</span>
                             ) : (
-                              <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium">Na Média</span>
+                              <span className="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold">Na Média</span>
                             )}
                           </td>
                         </tr>
@@ -213,15 +213,15 @@ export const PortalDashboard: React.FC = () => {
           </div>
           
           {/* Quadro de Avisos (Simulado) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6 hover-lift">
             <div className="flex items-center gap-3 mb-6">
               <Bell className="text-amber-500" size={24} />
               <h3 className="text-lg font-bold text-gray-900">Mural de Avisos</h3>
             </div>
             <div className="space-y-4">
-              <div className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50 rounded-r-lg">
-                <p className="text-sm font-bold text-gray-900">Bem-vindo ao novo Portal!</p>
-                <p className="text-sm text-gray-600">Acompanhe suas notas e situação financeira de forma simples e rápida.</p>
+              <div className="border-l-4 border-indigo-500 pl-4 py-3 bg-gradient-to-r from-indigo-50 to-white rounded-r-xl shadow-sm">
+                <p className="text-sm font-bold text-gray-900 mb-1">Bem-vindo ao novo Portal!</p>
+                <p className="text-sm text-gray-600 font-medium">Acompanhe suas notas e situação financeira de forma simples e rápida.</p>
               </div>
             </div>
           </div>
@@ -229,7 +229,7 @@ export const PortalDashboard: React.FC = () => {
 
         {/* Coluna Lateral: Financeiro e Atalhos */}
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6 hover-lift">
             <div className="flex items-center gap-3 mb-6">
               <CreditCard className="text-rose-500" size={24} />
               <h3 className="text-lg font-bold text-gray-900">Financeiro</h3>
@@ -237,22 +237,22 @@ export const PortalDashboard: React.FC = () => {
             
             <div className="space-y-4">
               {loading ? (
-                <p className="text-sm text-gray-400">Carregando faturas...</p>
+                <p className="text-sm text-gray-400 font-medium animate-pulse">Carregando faturas...</p>
               ) : boletos.length === 0 ? (
-                <p className="text-sm text-gray-500">Nenhuma fatura encontrada.</p>
+                <p className="text-sm text-gray-500 font-medium bg-gray-50 p-4 rounded-xl text-center">Nenhuma fatura encontrada.</p>
               ) : (
                 boletos.map((boleto, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-gray-50">
+                  <div key={idx} className="flex items-center justify-between p-4 border border-gray-100 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors">
                     <div>
                       <p className="font-bold text-gray-900">{boleto.mes}</p>
-                      <p className="text-xs text-gray-500">Venc: {boleto.vencimento}</p>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Venc: {boleto.vencimento}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">R$ {boleto.valor.toFixed(2)}</p>
+                    <div className="text-right flex flex-col items-end">
+                      <p className="font-black text-gray-900">R$ {boleto.valor.toFixed(2)}</p>
                       {boleto.status === 'Pago' ? (
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">PAGO</span>
+                        <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full uppercase tracking-wider mt-1">Pago</span>
                       ) : (
-                        <button className="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded-full transition-colors shadow-sm">
+                        <button className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-300 shadow-sm hover:shadow-md">
                           Pagar Pix
                         </button>
                       )}
@@ -264,26 +264,26 @@ export const PortalDashboard: React.FC = () => {
           </div>
 
           {/* Cards de Desempenho */}
-          <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
-            <div className="flex items-center gap-4">
-              <div className="bg-emerald-500 p-3 rounded-full text-white">
-                <Award size={24} />
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-3xl p-6 border border-emerald-200 shadow-sm hover-lift">
+            <div className="flex items-center gap-5">
+              <div className="bg-emerald-500 p-4 rounded-2xl text-white shadow-inner">
+                <Award size={28} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-emerald-800">Presença Geral</p>
-                <p className="text-2xl font-bold text-emerald-900">{loading ? '...' : `${frequenciaGeral}%`}</p>
+                <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest">Presença Geral</p>
+                <p className="text-3xl font-black text-emerald-900 mt-1">{loading ? '...' : `${frequenciaGeral}%`}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-500 p-3 rounded-full text-white">
-                <Calendar size={24} />
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-6 border border-blue-200 shadow-sm hover-lift">
+            <div className="flex items-center gap-5">
+              <div className="bg-blue-500 p-4 rounded-2xl text-white shadow-inner">
+                <Calendar size={28} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-blue-800">Dias Letivos</p>
-                <p className="text-2xl font-bold text-blue-900">200</p>
+                <p className="text-xs font-bold text-blue-800 uppercase tracking-widest">Dias Letivos</p>
+                <p className="text-3xl font-black text-blue-900 mt-1">200</p>
               </div>
             </div>
           </div>

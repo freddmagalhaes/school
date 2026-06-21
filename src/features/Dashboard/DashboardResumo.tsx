@@ -120,21 +120,21 @@ export const DashboardResumo: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.filter((card) => card.visible).map((card) => (
-          <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 transition-transform hover:-translate-y-1">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+          <div key={card.title} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 hover-lift">
+            <div className="p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 rounded-xl shadow-inner border border-indigo-50">
               <card.icon size={24} />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">{card.title}</p>
-              <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{card.title}</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{card.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm min-h-[340px]">
-          <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm min-h-[340px] hover-lift">
+          <div className="flex items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800">{['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') ? 'Receitas x Despesas' : 'Atividade Financeira'}</h3>
               <p className="text-sm text-gray-500">Últimos 6 meses de movimentação aprovada.</p>
@@ -155,15 +155,17 @@ export const DashboardResumo: React.FC = () => {
           {loading && <p className="text-sm text-gray-500 mt-4">Atualizando dados...</p>}
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Avisos de Gestão</h3>
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover-lift">
+          <h3 className="text-lg font-bold text-gray-800 mb-6">Avisos de Gestão</h3>
           <div className="space-y-4">
-            <div className="p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
-              <span className="text-xs font-bold text-indigo-600 mb-1 block">SISTEMA</span>
-              <p className="text-sm text-gray-700">Verifique os próximos períodos letivos e atualize os prazos de encerramento de notas.</p>
+            <div className="p-5 bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 shadow-sm">
+              <span className="text-xs font-bold text-indigo-600 mb-2 block uppercase tracking-widest">SISTEMA</span>
+              <p className="text-sm text-gray-700 font-medium">Verifique os próximos períodos letivos e atualize os prazos de encerramento de notas.</p>
             </div>
-            <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
-              <p className="text-sm text-amber-700">{saldoCaixa < 0 ? 'Saldo negativo detectado. Reveja despesas aprovadas.' : 'Fluxo de caixa saudável no período atual.'}</p>
+            <div className={`p-5 rounded-xl border shadow-sm ${saldoCaixa < 0 ? 'bg-gradient-to-r from-rose-50 to-white border-rose-100' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-100'}`}>
+              <p className={`text-sm font-medium ${saldoCaixa < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                {saldoCaixa < 0 ? 'Saldo negativo detectado. Reveja despesas aprovadas.' : 'Fluxo de caixa saudável no período atual.'}
+              </p>
             </div>
           </div>
         </div>

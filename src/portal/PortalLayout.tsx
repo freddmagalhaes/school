@@ -20,31 +20,31 @@ export const PortalLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800">
       {/* Header do Portal */}
-      <header className="bg-indigo-600 shadow-md">
+      <header className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <GraduationCap className="text-white h-6 w-6" />
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm border border-white/20 shadow-inner">
+                <GraduationCap className="text-white h-7 w-7" />
               </div>
-              <h1 className="text-xl font-bold text-white tracking-tight">
+              <h1 className="text-2xl font-extrabold text-white tracking-tight">
                 Portal do Aluno
-                {escolaAtiva && <span className="font-medium text-indigo-200 ml-2">| {escolaAtiva.escola.nome}</span>}
+                {escolaAtiva && <span className="font-medium text-indigo-200 ml-3 text-lg opacity-80">| {escolaAtiva.escola.nome}</span>}
               </h1>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 text-indigo-100">
-                <User size={18} />
-                <span className="text-sm font-medium">{user.email}</span>
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:flex flex-col items-end text-indigo-100">
+                <span className="text-sm font-bold text-white">{user.email}</span>
+                <span className="text-xs text-indigo-300 font-medium uppercase tracking-widest">Área do Aluno</span>
               </div>
               <button
                 onClick={signOut}
-                className="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 border border-white/20 hover:border-white/40 hover-lift"
               >
-                <LogOut size={16} />
+                <LogOut size={18} />
                 Sair
               </button>
             </div>
@@ -53,7 +53,7 @@ export const PortalLayout: React.FC = () => {
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
         <Outlet />
       </main>
     </div>
