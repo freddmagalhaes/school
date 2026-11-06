@@ -11,7 +11,7 @@ export interface UserPerfil {
 }
 
 // Tipos base de nossa aplicação
-export type PerfilPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor' | 'Aluno';
+export type PerfilPapel = 'Admin' | 'Diretor' | 'Subdiretor' | 'Secretaria' | 'Professor' | 'Aluno' | 'Responsavel';
 export type VinculoTipo = 'Efetivo' | 'Designado';
 
 interface Escola {

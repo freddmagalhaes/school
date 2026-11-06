@@ -11,6 +11,7 @@ interface LeadINEP {
   dependencia_adm: string;
   localizacao: string;
   status: string;
+  telefone?: string | null;
 }
 
 import { formatarCNPJ, formatarCPF, validarCNPJ, validarCPF } from '../../utils/validators';
@@ -119,12 +120,13 @@ export const LeadsINEP: React.FC = () => {
           email: formConversao.emailGestor,
           nome: formConversao.nomeGestor,
           cpf: formConversao.cpfGestor,
-          escolaId: escolaData.id,
+          escola_id: escolaData.id,
           papel: 'Diretor'
         }
       });
 
       if (funcError) throw new Error('Erro ao criar usuário: ' + funcError.message);
+      if (funcData?.error) throw new Error('Erro ao criar usuário: ' + funcData.error);
 
       // 3. Atualizar o Lead
       await supabase

@@ -41,6 +41,8 @@ export const DiarioClasse: React.FC = () => {
   const [frequencias, setFrequencias] = useState<Record<string, boolean>>({});
   const [notas, setNotas] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
+  // Enquanto os dados do dia carregam, a digitação fica travada: o que chega depois sobrescreveria o digitado.
+  const [carregandoDia, setCarregandoDia] = useState(false);
   const [msgStatus, setMsgStatus] = useState('');
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export const DiarioClasse: React.FC = () => {
     setMsgStatus('');
 
     const { data: matriculasData } = await supabase
-      .from('turma_alunos')
+      .from('matriculas')
       .select('id, perfis:aluno_id (id, nome)')
       .eq('turma_id', t.turma_id)
       .eq('status', 'Ativo');
@@ -104,6 +106,7 @@ export const DiarioClasse: React.FC = () => {
   const carregarDiarioDoDia = async (listaAlunos: Aluno[], t: TurmaVinculo, data: string) => {
     const matriculasIds = listaAlunos.map(a => a.matricula_id);
     if (matriculasIds.length === 0) return;
+    setCarregandoDia(true);
 
     // Frequência
     const { data: freqData } = await supabase
@@ -133,6 +136,7 @@ export const DiarioClasse: React.FC = () => {
       notasData.forEach((n: any) => { notasMap[n.matricula_id] = n.valor.toString(); });
     }
     setNotas(notasMap);
+    setCarregandoDia(false);
   };
 
   useEffect(() => {
@@ -150,20 +154,21 @@ export const DiarioClasse: React.FC = () => {
       const matriculasIds = alunos.map(a => a.matricula_id);
 
       // Limpa e reinsere Frequência
-      await supabase.from('frequencia').delete().in('matricula_id', matriculasIds).eq('data', dataDiario);
+      const falhou = (r: { error: { message: string } | null }) => { if (r.error) throw new Error(r.error.message); };
+      falhou(await supabase.from('frequencia').delete().in('matricula_id', matriculasIds).eq('data', dataDiario));
       const insertsFreq = alunos.map(a => ({
         escola_id: escolaId,
         matricula_id: a.matricula_id,
         data: dataDiario,
         presente: frequencias[a.matricula_id] ?? true
       }));
-      await supabase.from('frequencia').insert(insertsFreq);
+      falhou(await supabase.from('frequencia').insert(insertsFreq));
 
       // Limpa e reinsere Notas (somente as preenchidas)
-      await supabase.from('notas').delete()
+      falhou(await supabase.from('notas').delete()
         .in('matricula_id', matriculasIds)
         .eq('disciplina_id', turmaSelecionada.disciplina_id)
-        .eq('data', dataDiario);
+        .eq('data', dataDiario));
 
       const insertsNotas = alunos
         .filter(a => notas[a.matricula_id] !== undefined && notas[a.matricula_id] !== '')
@@ -176,7 +181,7 @@ export const DiarioClasse: React.FC = () => {
         }));
 
       if (insertsNotas.length > 0) {
-        await supabase.from('notas').insert(insertsNotas);
+        falhou(await supabase.from('notas').insert(insertsNotas));
       }
 
       setMsgStatus('Diário salvo com sucesso!');
@@ -265,7 +270,7 @@ export const DiarioClasse: React.FC = () => {
                 </div>
                 <button
                   onClick={handleSalvarDiario}
-                  disabled={salvando || alunos.length === 0}
+                  disabled={salvando || carregandoDia || alunos.length === 0}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
                 >
                   <Save size={16} /> {salvando ? 'Salvando...' : 'Salvar Diário'}
@@ -318,7 +323,7 @@ export const DiarioClasse: React.FC = () => {
                         <td className="py-3">
                           <div className="flex justify-center">
                             <input
-                              type="number" step="0.1" min="0" max="10"
+                              type="number" step="0.1" min="0" max="10" disabled={carregandoDia}
                               value={notas[aluno.matricula_id] || ''}
                               onChange={e => setNotas({ ...notas, [aluno.matricula_id]: e.target.value })}
                               placeholder="—"

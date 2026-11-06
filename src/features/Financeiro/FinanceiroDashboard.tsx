@@ -151,13 +151,23 @@ export const FinanceiroDashboard: React.FC = () => {
     setLoading(true);
     
     // Pega os alunos matriculados
-    const { data: matriculas } = await supabase
-      .from('turma_alunos')
-      .select('aluno_id, turma_id, turmas!inner(escola_id)')
+    const { data: matriculasAtivas } = await supabase
+      .from('matriculas')
+      .select('aluno_id, turma_id')
       .eq('status', 'Ativo')
-      .eq('turmas.escola_id', escolaAtiva.escola_id);
-      
-    if (matriculas && matriculas.length > 0) {
+      .eq('escola_id', escolaAtiva.escola_id);
+    // faturas.aluno_id aponta para membros_escola.id (o vínculo do aluno), não para o perfil
+    const { data: vinculos } = await supabase
+      .from('membros_escola')
+      .select('id, user_id')
+      .eq('escola_id', escolaAtiva.escola_id)
+      .eq('papel', 'Aluno');
+    const vinculoDoAluno = new Map((vinculos || []).map((v: any) => [v.user_id, v.id as string]));
+    const matriculas = (matriculasAtivas || [])
+      .filter((m: any) => vinculoDoAluno.has(m.aluno_id))
+      .map((m: any) => ({ aluno_id: vinculoDoAluno.get(m.aluno_id) as string, turma_id: m.turma_id as string }));
+
+    if (matriculas.length > 0) {
       const mesAtual = format(new Date(), 'MMMM/yyyy');
       
       const faturas = matriculas.map(m => ({

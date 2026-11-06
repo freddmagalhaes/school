@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
   if (!user) return <Navigate to="/login" replace />;
   
-  if (escolaAtiva?.papel === 'Aluno') {
+  if (escolaAtiva?.papel === 'Aluno' || escolaAtiva?.papel === 'Responsavel') {
     return <Navigate to="/portal/dashboard" replace />;
   }
   
