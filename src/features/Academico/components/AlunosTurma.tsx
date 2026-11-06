@@ -23,6 +23,8 @@ interface AlunoBusca {
 }
 
 const MOTIVOS_SAIDA = ['Transferido', 'Evadido', 'Expulso', 'Outro'];
+// O enum status_matricula só tem Ativo, Inativo, Transferido, Expulso e Evadido: "Outro" vira Inativo.
+const statusDoMotivo = (m: string) => (m === 'Outro' ? 'Inativo' : m);
 
 export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, anoLetivo }) => {
   const [alunos, setAlunos] = useState<AlunoMatricula[]>([]);
@@ -44,7 +46,7 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
   const carregarAlunos = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('turma_alunos')
+      .from('matriculas')
       .select('id, status, perfis:aluno_id (id, nome)')
       .eq('turma_id', turmaId)
       .order('status');
@@ -82,12 +84,13 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
 
     // Verifica se o aluno já tem matrícula ativa em outra turma do mesmo ano/escola
     const { data: outraMatricula } = await supabase
-      .from('turma_alunos')
+      .from('matriculas')
       .select('id, turmas!inner(nome, ano_letivo, escola_id)')
       .eq('aluno_id', aluno.id)
       .eq('status', 'Ativo')
       .eq('turmas.escola_id', escolaId)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (outraMatricula) {
       const outraTurma = (outraMatricula as any).turmas;
@@ -98,7 +101,8 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
       }
     }
 
-    const { error } = await supabase.from('turma_alunos').insert({
+    const { error } = await supabase.from('matriculas').insert({
+      escola_id: escolaId,
       turma_id: turmaId,
       aluno_id: aluno.id,
       status: 'Ativo',
@@ -122,8 +126,10 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
   const handleConfirmarSaida = async () => {
     if (!alunoSaida) return;
     setConfirmandoSaida(true);
-    await supabase.from('turma_alunos').update({
-      status: motivoSaida
+    await supabase.from('matriculas').update({
+      status: statusDoMotivo(motivoSaida),
+      motivo_saida: motivoSaida,
+      data_saida: new Date().toISOString().split('T')[0],
     }).eq('id', alunoSaida.matricula_id);
     setAlunoSaida(null);
     setConfirmandoSaida(false);

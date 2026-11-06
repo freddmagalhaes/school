@@ -87,7 +87,7 @@ export const DiarioClasse: React.FC = () => {
     setMsgStatus('');
 
     const { data: matriculasData } = await supabase
-      .from('turma_alunos')
+      .from('matriculas')
       .select('id, perfis:aluno_id (id, nome)')
       .eq('turma_id', t.turma_id)
       .eq('status', 'Ativo');
@@ -150,20 +150,21 @@ export const DiarioClasse: React.FC = () => {
       const matriculasIds = alunos.map(a => a.matricula_id);
 
       // Limpa e reinsere Frequência
-      await supabase.from('frequencia').delete().in('matricula_id', matriculasIds).eq('data', dataDiario);
+      const falhou = (r: { error: { message: string } | null }) => { if (r.error) throw new Error(r.error.message); };
+      falhou(await supabase.from('frequencia').delete().in('matricula_id', matriculasIds).eq('data', dataDiario));
       const insertsFreq = alunos.map(a => ({
         escola_id: escolaId,
         matricula_id: a.matricula_id,
         data: dataDiario,
         presente: frequencias[a.matricula_id] ?? true
       }));
-      await supabase.from('frequencia').insert(insertsFreq);
+      falhou(await supabase.from('frequencia').insert(insertsFreq));
 
       // Limpa e reinsere Notas (somente as preenchidas)
-      await supabase.from('notas').delete()
+      falhou(await supabase.from('notas').delete()
         .in('matricula_id', matriculasIds)
         .eq('disciplina_id', turmaSelecionada.disciplina_id)
-        .eq('data', dataDiario);
+        .eq('data', dataDiario));
 
       const insertsNotas = alunos
         .filter(a => notas[a.matricula_id] !== undefined && notas[a.matricula_id] !== '')
@@ -176,7 +177,7 @@ export const DiarioClasse: React.FC = () => {
         }));
 
       if (insertsNotas.length > 0) {
-        await supabase.from('notas').insert(insertsNotas);
+        falhou(await supabase.from('notas').insert(insertsNotas));
       }
 
       setMsgStatus('Diário salvo com sucesso!');

@@ -284,3 +284,15 @@ describe('Vínculos entre escolas e turma_alunos', () => {
     assert.equal(r.rowCount, 0);
   });
 });
+
+describe('Esquema exigido pelo app', () => {
+  test('perfis tem a coluna metadata (a Edge Function create-school-user grava nela)', async () => {
+    const r = await as(ID.adminA, (q) => q('SELECT metadata FROM public.perfis LIMIT 1'));
+    assert.ok(!r.error, r.error?.message);
+  });
+  test('notas e frequência só aceitam id de matriculas (por isso o app não pode usar turma_alunos)', async () => {
+    const { rows } = await admin('SELECT id FROM public.turma_alunos LIMIT 1');
+    const r = await admin("INSERT INTO public.frequencia (escola_id, matricula_id, data) VALUES ($1, $2, '2026-05-01')", [ID.escolaA, rows[0].id]).catch((e) => ({ error: e }));
+    assert.ok(r.error, 'gravar frequência com id de turma_alunos deveria violar a chave estrangeira');
+  });
+});

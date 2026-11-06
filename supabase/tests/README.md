@@ -12,5 +12,13 @@ npm run test:rls            # RLS_DB_URL para apontar para outro Postgres
 - Cada teste roda como um usuário real, sob RLS, e desfaz tudo no fim.
 - **Todo SQL novo que mexe em política precisa de teste aqui.** Prova de que um teste vale: remova a regra e ele deve falhar.
 
-## Limite conhecido: o schema real de produção não está no repositório
-Os arquivos `schema.sql` e `fase1_*.sql` definem as mesmas tabelas de formas diferentes (`CREATE TABLE IF NOT EXISTS` ignora o segundo). O app usa duas tabelas de matrícula (`matriculas` e `turma_alunos`). Antes de aplicar uma migration em produção, gere o schema real (`supabase db dump --schema public`), compare e ajuste os testes ao que existe de fato.
+## Esquema real de produção
+`schema_producao.sql` é um snapshot da **estrutura** do banco real (exportado em 2026-11-06 pelo SQL Editor do Supabase: colunas, restrições, enums, funções, gatilhos e políticas; sem dados).
+`RLS_BASE=producao npm run test:rls` roda a mesma suíte contra ele; o CI roda os dois modos. Atualize o snapshot sempre que o banco mudar.
+
+O que o snapshot revelou (e já está corrigido no app ou nas migrations):
+- `notas` e `frequencia` só aceitam `id` de `matriculas`; o app usava `turma_alunos` (diário, portal, gestão de turmas, faturas em massa), então **o diário não gravava nada** e mostrava "salvo com sucesso". O app agora usa `matriculas` e confere o erro de cada gravação.
+- `perfis` não tem a coluna `metadata` (a Edge Function grava nela): migration `20261106000050`.
+- Só existia política de leitura em `membros_escola` e nenhuma de atualização em `perfis`: remover usuário e gravar o aceite dos termos falhavam em silêncio.
+
+Ordem para aplicar em produção (cada arquivo como uma execução separada no SQL Editor): `migrations/20261106000050_*`, `...000100_*`, `...000200_*`, `...000300_*`.

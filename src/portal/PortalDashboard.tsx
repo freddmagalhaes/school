@@ -25,7 +25,7 @@ export const PortalDashboard: React.FC = () => {
   const { escolaAtiva, perfil, user } = useAuth();
   const ehResponsavel = escolaAtiva?.papel === 'Responsavel';
   // Aluno vê a si mesmo; Responsável escolhe entre os alunos que acompanha (membros_escola.id de cada aluno)
-  const [filhos, setFilhos] = useState<{ membroId: string; nome: string }[]>([]);
+  const [filhos, setFilhos] = useState<{ perfilId: string; membroId: string; nome: string }[]>([]);
   const [alunoSel, setAlunoSel] = useState<string | null>(null);
   const [semVinculo, setSemVinculo] = useState(false);
 
@@ -38,7 +38,7 @@ export const PortalDashboard: React.FC = () => {
   useEffect(() => {
     if (!escolaAtiva) return;
     if (!ehResponsavel) {
-      setAlunoSel(escolaAtiva.id);
+      setAlunoSel(user?.id ?? null);
       return;
     }
     const carregarFilhos = async () => {
@@ -60,11 +60,11 @@ export const PortalDashboard: React.FC = () => {
         .eq('papel', 'Aluno')
         .in('user_id', ids);
       const lista = (vinculos || [])
-        .map((v: any) => ({ membroId: membros?.find((m: any) => m.user_id === v.aluno_id)?.id as string, nome: (v.perfis?.nome as string) || 'Aluno' }))
+        .map((v: any) => ({ perfilId: v.aluno_id as string, membroId: membros?.find((m: any) => m.user_id === v.aluno_id)?.id as string, nome: (v.perfis?.nome as string) || 'Aluno' }))
         .filter((f) => f.membroId);
       setFilhos(lista);
       setSemVinculo(lista.length === 0);
-      setAlunoSel(lista[0]?.membroId ?? null);
+      setAlunoSel(lista[0]?.perfilId ?? null);
       if (lista.length === 0) setLoading(false);
     };
     carregarFilhos();
@@ -74,18 +74,20 @@ export const PortalDashboard: React.FC = () => {
     if (escolaAtiva && alunoSel) carregarDadosPortal(alunoSel);
   }, [escolaAtiva, alunoSel]);
 
-  const carregarDadosPortal = async (alunoMembroId: string) => {
+  const carregarDadosPortal = async (alunoPerfilId: string) => {
     if (!escolaAtiva) return;
+    // faturas apontam para o vínculo do aluno (membros_escola.id); a matrícula aponta para o perfil
+    const alunoMembroId = ehResponsavel ? filhos.find((f) => f.perfilId === alunoPerfilId)?.membroId : escolaAtiva.id;
     setLoading(true);
 
     try {
       // 1. Pega a matrícula do aluno
       const { data: matriculas } = await supabase
-        .from('turma_alunos')
+        .from('matriculas')
         .select('id, turmas (id, nome)')
-        .eq('aluno_id', alunoMembroId)
+        .eq('aluno_id', alunoPerfilId)
         .eq('status', 'Ativo')
-        .order('data_matricula', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
 
       let matriculaId = null;
@@ -102,7 +104,7 @@ export const PortalDashboard: React.FC = () => {
       const { data: faturasData } = await supabase
         .from('faturas')
         .select('id, mes_referencia, data_vencimento, valor, status')
-        .eq('aluno_id', alunoMembroId)
+        .eq('aluno_id', alunoMembroId ?? '')
         .order('data_vencimento', { ascending: false });
 
       if (faturasData) {
@@ -199,7 +201,7 @@ export const PortalDashboard: React.FC = () => {
                   Aluno(a):
                   <select value={alunoSel ?? ''} onChange={(e) => setAlunoSel(e.target.value)}
                     className="rounded-lg px-3 py-2 text-gray-900 bg-white">
-                    {filhos.map((f) => <option key={f.membroId} value={f.membroId}>{f.nome}</option>)}
+                    {filhos.map((f) => <option key={f.perfilId} value={f.perfilId}>{f.nome}</option>)}
                   </select>
                 </label>
               )}

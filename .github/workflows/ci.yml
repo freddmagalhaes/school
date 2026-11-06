@@ -31,6 +31,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:rls
+      - name: Testes de RLS contra o esquema real de produção (snapshot)
+        run: RLS_BASE=producao npm run test:rls
 
   build:
     name: Build (tsc + vite)

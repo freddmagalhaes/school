@@ -11,15 +11,19 @@ const ADMIN_URL = process.env.RLS_DB_URL || 'postgres://postgres:teste-local-123
 const DB_NAME = process.env.RLS_TEST_DB || 'edugestao_rls';
 
 // Ordem em que os SQL do repositório são aplicados (os mesmos passos do deploy).
-const FILES = [
-  'tests/00_supabase_stub.sql',
-  'schema.sql',
-  'fase1_academico.sql',
-  'fase1_diario.sql',
-  'fase2_financeiro.sql',
-  'lgpd_setup.sql',
-  'production_setup.sql',
-];
+// RLS_BASE=producao usa o snapshot do banco real (tests/schema_producao.sql) em vez dos SQL do repositório.
+// RLS_SEM_MIGRATIONS=1 testa só o estado atual (sem as migrations novas), para medir o "antes".
+const FILES = process.env.RLS_BASE === 'producao'
+  ? ['tests/00_supabase_stub.sql', 'tests/schema_producao.sql']
+  : [
+      'tests/00_supabase_stub.sql',
+      'schema.sql',
+      'fase1_academico.sql',
+      'fase1_diario.sql',
+      'fase2_financeiro.sql',
+      'lgpd_setup.sql',
+      'production_setup.sql',
+    ];
 
 const withDb = (name) => {
   const u = new URL(ADMIN_URL);
@@ -85,7 +89,7 @@ export async function setup() {
   pool = new pg.Pool({ connectionString: withDb(DB_NAME), max: 4 });
   const files = [...FILES];
   const migDir = path.join(root, 'migrations');
-  if (fs.existsSync(migDir)) {
+  if (fs.existsSync(migDir) && !process.env.RLS_SEM_MIGRATIONS) {
     for (const f of fs.readdirSync(migDir).filter((n) => n.endsWith('.sql')).sort()) files.push(`migrations/${f}`);
   }
   for (const f of files) await pool.query(fs.readFileSync(path.join(root, f), 'utf8'));
