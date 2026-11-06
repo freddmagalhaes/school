@@ -1,3 +1,5 @@
+-- (O editor roda cada instrução em conexão separada: por isso a função é comum, não temporária.
+-- Depois de ver o resultado, rode o arquivo limpar_testes.sql.)
 -- Passo 6 (b), teste COMO VISITANTE (anon). Não grava nada (cada tentativa é desfeita).
 -- Esperado:
 --   enviar contato (formulário público) ... PERMITIDO
@@ -5,7 +7,7 @@
 --   ler escolas ........................... NEGADO (permission denied)
 --   ler notas ............................. NEGADO
 --   limpar (TRUNCATE) a tabela notas ...... NEGADO
-create or replace function pg_temp.teste_visitante() returns table(tentativa text, resultado text)
+create or replace function public.zz_teste_visitante() returns table(tentativa text, resultado text)
 language plpgsql as $$
 declare r text;
 begin
@@ -32,4 +34,4 @@ begin
   exception when others then r := case when sqlerrm = 'ok' then 'PERMITIDO (!)' else 'NEGADO: ' || sqlerrm end; end;
   tentativa := 'limpar a tabela notas (TRUNCATE)'; resultado := r; return next;
 end $$;
-select * from pg_temp.teste_visitante();
+select * from public.zz_teste_visitante();

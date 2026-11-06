@@ -1,8 +1,10 @@
+-- Passo 2, teste de COMPORTAMENTO. (O editor roda cada instrução em conexão separada: por isso a função é
+-- comum, não temporária. Depois de ver o resultado, rode o arquivo limpar_testes.sql.)
 -- Passo 2, teste de COMPORTAMENTO. Não grava nada e não precisa de nenhum id: pega sozinho um aluno real
 -- e consulta COMO se fosse ele (o RLS é aplicado).
 -- Esperado: o aluno vê só as PRÓPRIAS notas/faturas, 0 linhas do financeiro e 1 perfil (o dele).
 -- Antes do passo 2 isso devolvia TODAS as notas e faturas da escola, o financeiro e todos os perfis (com CPF).
-create or replace function pg_temp.teste_aluno() returns table(item text, valor bigint)
+create or replace function public.zz_teste_aluno() returns table(item text, valor bigint)
 language plpgsql as $$
 declare uid uuid;
 begin
@@ -16,4 +18,4 @@ begin
     union all select 'linhas do financeiro (esperado: 0)', (select count(*) from public.financeiro_verbas)
     union all select 'perfis que o aluno enxerga (esperado: 1)', (select count(*) from public.perfis);
 end $$;
-select * from pg_temp.teste_aluno();
+select * from public.zz_teste_aluno();

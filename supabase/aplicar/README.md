@@ -39,7 +39,7 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **Risco:** médio. Deploy do site novo logo depois (veja "Depois dos passos").
 **Conferir:**
 1. `verificar/02.sql`. Esperado: `funcoes novas = 7` e as políticas por tabela listadas no próprio arquivo (nenhuma "Acesso ..." antiga).
-2. `verificar/02b_teste_comportamento.sql` (sozinho, sem editar nada). Esperado: o aluno enxerga só as **próprias** notas e faturas (os números dependem dos seus dados, mas devem ser **bem menores que o total da escola**; um aluno com 4 disciplinas vê 4 notas, não as de todos), **0** linhas do financeiro e **1** perfil. Antes deste passo ele via tudo.
+2. `verificar/02b_teste_comportamento.sql` (sozinho, sem editar nada). Depois de ver o resultado, rode `verificar/limpar_testes.sql` (remove a função auxiliar). Esperado: o aluno enxerga só as **próprias** notas e faturas (os números dependem dos seus dados, mas devem ser **bem menores que o total da escola**; um aluno com 4 disciplinas vê 4 notas, não as de todos), **0** linhas do financeiro e **1** perfil. Antes deste passo ele via tudo.
 **Desfazer:** `reverter/reverter_02_04_politicas.sql` (volta às políticas originais).
 
 ## Passo 3: papel "Responsável"  (`03_papel_responsavel.sql`)
@@ -62,7 +62,7 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **Atenção:** se algum outro site ou app seu usa a chave pública (`anon`) para **ler** alguma tabela, ele deixa de funcionar. Se não tiver certeza, deixe este passo por último, depois de conferir tudo.
 **Conferir:**
 1. `verificar/06.sql`. Esperado: `anon | INSERT | 2` e `authenticated | DELETE/INSERT/SELECT/UPDATE | 21` cada (sem TRUNCATE/TRIGGER/REFERENCES).
-2. `verificar/06b_teste_visitante.sql`. Esperado: enviar contato **PERMITIDO**, criar assinatura **PERMITIDO**, ler escolas/notas **NEGADO**, TRUNCATE **NEGADO**.
+2. `verificar/06b_teste_visitante.sql` (e depois `verificar/limpar_testes.sql`). Esperado: enviar contato **PERMITIDO**, criar assinatura **PERMITIDO**, ler escolas/notas **NEGADO**, TRUNCATE **NEGADO**.
 **Desfazer:** `reverter/reverter_06_privilegios.sql`.
 
 ---
