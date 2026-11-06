@@ -73,7 +73,7 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           // Se já carregamos uma vez, não mostra o loading de tela cheia novamente
-          const isSilent = event === 'TOKEN_REFRESH' || event === 'USER_UPDATED' || hasLoadedRef.current;
+          const isSilent = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || hasLoadedRef.current;
           await fetchOperador(session.user.id, isSilent);
         } else {
           setOperador(null);

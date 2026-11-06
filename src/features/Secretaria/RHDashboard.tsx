@@ -171,7 +171,7 @@ interface Profissional {
     return matchBusca && matchVinculo;
   });
 
-  const toggleMostrarCpf = async (profId: string, cpf: string, nome: string) => {
+  const toggleMostrarCpf = async (profId: string, nome: string) => {
     const isRevelado = cpfsRevelados[profId];
     
     if (!isRevelado) {
@@ -281,7 +281,7 @@ interface Profissional {
                               </p>
                               {prof.cpf && prof.cpf !== 'N/A' && (
                                 <button 
-                                  onClick={() => toggleMostrarCpf(prof.id, prof.cpf, prof.nome)}
+                                  onClick={() => toggleMostrarCpf(prof.id, prof.nome)}
                                   title={cpfsRevelados[prof.id] ? "Ocultar CPF" : "Revelar CPF (Ação auditada)"}
                                   className="text-gray-400 hover:text-indigo-600 transition-colors"
                                 >

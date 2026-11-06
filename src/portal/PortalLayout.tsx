@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, GraduationCap, User } from 'lucide-react';
+import { LogOut, GraduationCap } from 'lucide-react';
 
 export const PortalLayout: React.FC = () => {
   const { user, escolaAtiva, signOut, loading } = useAuth();

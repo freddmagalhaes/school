@@ -5,7 +5,7 @@ import {
   Building2, ShieldAlert, Settings, Save, 
   CheckCircle2, UserPlus, Lock, Calendar, Plus, Trash2
 } from 'lucide-react';
-import { formatarCNPJ, formatarCPF, validarCNPJ, validarCPF } from '../../utils/validators';
+import { formatarCNPJ, validarCNPJ, validarCPF } from '../../utils/validators';
 
 type Tab = 'dados' | 'acessos' | 'preferencias' | 'periodos';
 
