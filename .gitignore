@@ -28,10 +28,10 @@ dist-ssr
 .ssh/
 .env*
 !.env.example
-supabase/schema.sql
 supabase/production_setup.sql
 
 # Arquivos Pesados / Dados / Seeds
 /ARQUIVO/
 *.csv
 supabase/seed_inep_mg.sql
+supabase/.temp/
