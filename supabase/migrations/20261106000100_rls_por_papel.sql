@@ -24,13 +24,20 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   );
 $$;
 
+-- O app grava notas/frequência com o id de `matriculas` OU de `turma_alunos` (o repositório tem as
+-- duas definições). As funções abaixo aceitam os dois, para a migration valer em qualquer um dos esquemas.
+
 -- O usuário leciona para a turma dessa matrícula (e disciplina, se informada)?
 CREATE OR REPLACE FUNCTION public.professor_leciona_matricula(p_matricula uuid, p_disciplina uuid DEFAULT NULL)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.matriculas m
+    SELECT 1 FROM (
+      SELECT turma_id FROM public.matriculas WHERE id = p_matricula
+      UNION ALL
+      SELECT turma_id FROM public.turma_alunos WHERE id = p_matricula
+    ) m
     JOIN public.turma_professores tp ON tp.turma_id = m.turma_id
-    WHERE m.id = p_matricula AND tp.professor_id = auth.uid()
+    WHERE tp.professor_id = auth.uid()
       AND (p_disciplina IS NULL OR tp.disciplina_id = p_disciplina)
   );
 $$;
@@ -38,13 +45,17 @@ $$;
 -- A matrícula é do próprio usuário (aluno)?
 CREATE OR REPLACE FUNCTION public.matricula_e_minha(p_matricula uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (SELECT 1 FROM public.matriculas WHERE id = p_matricula AND aluno_id = auth.uid());
+  SELECT EXISTS (SELECT 1 FROM public.matriculas WHERE id = p_matricula AND aluno_id = auth.uid())
+      OR EXISTS (SELECT 1 FROM public.turma_alunos ta JOIN public.membros_escola me ON me.id = ta.aluno_id
+                 WHERE ta.id = p_matricula AND me.user_id = auth.uid());
 $$;
 
 -- A matrícula pertence a essa escola? (impede gravar nota/frequência de uma escola numa matrícula de outra)
 CREATE OR REPLACE FUNCTION public.matricula_na_escola(p_matricula uuid, p_escola uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (SELECT 1 FROM public.matriculas WHERE id = p_matricula AND escola_id = p_escola);
+  SELECT EXISTS (SELECT 1 FROM public.matriculas WHERE id = p_matricula AND escola_id = p_escola)
+      OR EXISTS (SELECT 1 FROM public.turma_alunos ta JOIN public.turmas t ON t.id = ta.turma_id
+                 WHERE ta.id = p_matricula AND t.escola_id = p_escola);
 $$;
 
 -- O vínculo (membros_escola.id) é do próprio usuário?

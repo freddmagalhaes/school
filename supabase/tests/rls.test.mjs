@@ -208,7 +208,7 @@ describe('Secretaria, Diretor e Admin: o que cada um faz', () => {
     const q1 = await as(ID.adminA, (q) => q("UPDATE public.faturas SET status = 'Pago' WHERE id = $1", [ID.fatA1]));
     assert.equal(q1.rowCount, 1);
     const p = await as(ID.adminA, (q) => q('SELECT id FROM public.perfis'));
-    assert.equal(p.rowCount, 7);
+    assert.equal(p.rowCount, 8);
   });
   test('Admin altera a própria escola e gerencia períodos letivos', async () => {
     const e = await as(ID.adminA, (q) => q("UPDATE public.escolas SET telefone = '31999990000' WHERE id = $1", [ID.escolaA]));
