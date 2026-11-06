@@ -41,6 +41,8 @@ export const DiarioClasse: React.FC = () => {
   const [frequencias, setFrequencias] = useState<Record<string, boolean>>({});
   const [notas, setNotas] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
+  // Enquanto os dados do dia carregam, a digitação fica travada: o que chega depois sobrescreveria o digitado.
+  const [carregandoDia, setCarregandoDia] = useState(false);
   const [msgStatus, setMsgStatus] = useState('');
 
   useEffect(() => {
@@ -104,6 +106,7 @@ export const DiarioClasse: React.FC = () => {
   const carregarDiarioDoDia = async (listaAlunos: Aluno[], t: TurmaVinculo, data: string) => {
     const matriculasIds = listaAlunos.map(a => a.matricula_id);
     if (matriculasIds.length === 0) return;
+    setCarregandoDia(true);
 
     // Frequência
     const { data: freqData } = await supabase
@@ -133,6 +136,7 @@ export const DiarioClasse: React.FC = () => {
       notasData.forEach((n: any) => { notasMap[n.matricula_id] = n.valor.toString(); });
     }
     setNotas(notasMap);
+    setCarregandoDia(false);
   };
 
   useEffect(() => {
@@ -266,7 +270,7 @@ export const DiarioClasse: React.FC = () => {
                 </div>
                 <button
                   onClick={handleSalvarDiario}
-                  disabled={salvando || alunos.length === 0}
+                  disabled={salvando || carregandoDia || alunos.length === 0}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
                 >
                   <Save size={16} /> {salvando ? 'Salvando...' : 'Salvar Diário'}
@@ -319,7 +323,7 @@ export const DiarioClasse: React.FC = () => {
                         <td className="py-3">
                           <div className="flex justify-center">
                             <input
-                              type="number" step="0.1" min="0" max="10"
+                              type="number" step="0.1" min="0" max="10" disabled={carregandoDia}
                               value={notas[aluno.matricula_id] || ''}
                               onChange={e => setNotas({ ...notas, [aluno.matricula_id]: e.target.value })}
                               placeholder="—"

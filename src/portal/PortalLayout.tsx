@@ -2,9 +2,10 @@ import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, GraduationCap } from 'lucide-react';
+import { TermosAceiteModal } from '../components/LGPD/TermosAceiteModal';
 
 export const PortalLayout: React.FC = () => {
-  const { user, escolaAtiva, signOut, loading } = useAuth();
+  const { user, perfil, escolaAtiva, signOut, loading } = useAuth();
 
   if (loading) {
     return (
@@ -51,6 +52,9 @@ export const PortalLayout: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Aluno e responsável também precisam aceitar os Termos e a Política de Privacidade (dados de menores) */}
+      {perfil && !perfil.aceitou_termos_em && <TermosAceiteModal />}
 
       {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
