@@ -19,6 +19,8 @@ export const DashboardResumo: React.FC = () => {
   useEffect(() => {
     if (!escolaAtiva) return;
 
+    const veFinanceiro = ['Admin', 'Diretor', 'Subdiretor'].includes(papel || '');
+
     const carregarResumo = async () => {
       setLoading(true);
       const escolaId = escolaAtiva.escola_id;
@@ -29,7 +31,10 @@ export const DashboardResumo: React.FC = () => {
         supabase.from('turmas').select('id', { count: 'exact', head: true }).eq('escola_id', escolaId),
         supabase.from('matriculas').select('id', { count: 'exact', head: true }).eq('escola_id', escolaId).eq('status', 'Ativo'),
         supabase.from('membros_escola').select('id', { count: 'exact', head: true }).eq('escola_id', escolaId).not('data_fim', 'is', null).gte('data_fim', hoje).lte('data_fim', daqui30),
-        supabase.from('financeiro_verbas').select('valor, tipo, status_aprovacao, data_registro').eq('escola_id', escolaId).order('data_registro', { ascending: true }),
+        // O RLS só libera o financeiro para Admin, Diretor e Subdiretor: não consultamos para os demais.
+        veFinanceiro
+          ? supabase.from('financeiro_verbas').select('valor, tipo, status_aprovacao, data_registro').eq('escola_id', escolaId).order('data_registro', { ascending: true })
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       setTurmasAtivas(turmasRes.count || 0);
@@ -133,6 +138,7 @@ export const DashboardResumo: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') && (
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm min-h-[340px] hover-lift">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div>
@@ -154,6 +160,7 @@ export const DashboardResumo: React.FC = () => {
           </div>
           {loading && <p className="text-sm text-gray-500 mt-4">Atualizando dados...</p>}
         </div>
+        )}
 
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover-lift">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Avisos de Gestão</h3>
@@ -162,11 +169,13 @@ export const DashboardResumo: React.FC = () => {
               <span className="text-xs font-bold text-indigo-600 mb-2 block uppercase tracking-widest">SISTEMA</span>
               <p className="text-sm text-gray-700 font-medium">Verifique os próximos períodos letivos e atualize os prazos de encerramento de notas.</p>
             </div>
+            {['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') && (
             <div className={`p-5 rounded-xl border shadow-sm ${saldoCaixa < 0 ? 'bg-gradient-to-r from-rose-50 to-white border-rose-100' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-100'}`}>
               <p className={`text-sm font-medium ${saldoCaixa < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                 {saldoCaixa < 0 ? 'Saldo negativo detectado. Reveja despesas aprovadas.' : 'Fluxo de caixa saudável no período atual.'}
               </p>
             </div>
+            )}
           </div>
         </div>
       </div>
