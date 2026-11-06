@@ -409,8 +409,8 @@ export const GestaoUsuarios: React.FC = () => {
                     placeholder={editingMembro ? 'E-mail não disponível para edição' : 'email@escola.com'} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF</label>
-                  <input type="text" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })}
+                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF *</label>
+                  <input type="text" required value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })}
                     className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
                     placeholder="000.000.000-00" maxLength={14} />
                 </div>

@@ -4,7 +4,7 @@ Dois roteiros que usam Auth, PostgREST, Edge Function e e-mail de teste **reais*
 
 | Roteiro | O que valida |
 |---|---|
-| `fluxos-locais.mjs` (55 verificações) | as mesmas consultas das telas (Diário, Gestão de Turmas, Enturmação, Financeiro, Portal do Aluno e da Família), a Edge Function `create-school-user` (inclusive o e-mail de primeiro acesso) e o RLS com tokens verdadeiros |
+| `fluxos-locais.mjs` (57 verificações) | as mesmas consultas das telas (Diário, Gestão de Turmas, Enturmação, Financeiro, Portal do Aluno e da Família), a Edge Function `create-school-user` (inclusive o e-mail de primeiro acesso) e o RLS com tokens verdadeiros |
 | `ui.mjs` (18 verificações) | o app aberto num navegador: Termos de Uso, Diário (salvar e reabrir), Portal do Aluno, Portal da Família |
 
 ## Como rodar

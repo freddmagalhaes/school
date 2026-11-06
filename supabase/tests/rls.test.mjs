@@ -296,3 +296,30 @@ describe('Esquema exigido pelo app', () => {
     assert.ok(r.error, 'gravar frequência com id de turma_alunos deveria violar a chave estrangeira');
   });
 });
+
+describe('Privilégios (menor privilégio)', () => {
+  test('anon não consegue limpar nem ler tabelas; só insere em assinaturas e contatos', async () => {
+    for (const t of ['notas', 'perfis', 'faturas', 'escolas', 'membros_escola']) {
+      const r = await as(null, (q) => q(`SELECT 1 FROM public.${t}`));
+      assert.ok(r.error, `anon não deveria ter nem permissão de SELECT em ${t}`);
+    }
+    // contatos só existe no banco de produção (não está nos SQL do repositório)
+    const { rows: tem } = await admin("SELECT to_regclass('public.contatos') AS t");
+    if (tem[0].t) {
+      const c = await as(null, (q) => q("INSERT INTO public.contatos (nome, email, mensagem) VALUES ('a', 'a@a', 'oi')"));
+      assert.equal(c.rowCount, 1, c.error?.message);
+    }
+    const a = await as(null, (q) => q("INSERT INTO public.assinaturas (nome, email, nome_escola, plano, ciclo, metodo_pgto, valor_total) VALUES ('c', 'c@c', 'Esc', 'basico', 'mensal', 'pix', 590)"));
+    assert.equal(a.rowCount, 1, a.error?.message);
+  });
+  test('nenhum usuário (nem Admin) consegue TRUNCATE, que o RLS não cobre', async () => {
+    for (const uid of [ID.adminA, ID.adminB, null]) {
+      for (const t of ['notas', 'matriculas', 'perfis']) {
+        const r = await as(uid, (q) => q(`TRUNCATE public.${t} CASCADE`));
+        assert.ok(r.error, `TRUNCATE ${t} deveria ser negado`);
+      }
+    }
+    const { rows } = await admin('SELECT count(*)::int AS n FROM public.notas');
+    assert.ok(rows[0].n > 0, 'as notas precisam continuar existindo');
+  });
+});

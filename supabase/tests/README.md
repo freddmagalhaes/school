@@ -21,4 +21,7 @@ O que o snapshot revelou (e já está corrigido no app ou nas migrations):
 - `perfis` não tem a coluna `metadata` (a Edge Function grava nela): migration `20261106000050`.
 - Só existia política de leitura em `membros_escola` e nenhuma de atualização em `perfis`: remover usuário e gravar o aceite dos termos falhavam em silêncio.
 
-Ordem para aplicar em produção (cada arquivo como uma execução separada no SQL Editor): `migrations/20261106000050_*`, `...000100_*`, `...000200_*`, `...000300_*`.
+- Não havia índices além de chaves primárias/únicas (migration `...000400`), e `anon`/`authenticated` tinham TODOS os privilégios, inclusive `TRUNCATE`, que o RLS não cobre (migration `...000500`).
+- `perfis.cpf` é `NOT NULL`: a Edge Function agora exige o CPF antes de criar a conta.
+
+Ordem para aplicar em produção (cada arquivo como uma execução separada no SQL Editor): `migrations/20261106000050_*`, `...000100_*`, `...000200_*`, `...000300_*`, `...000400_*`, `...000500_*` (a de privilégios por último).

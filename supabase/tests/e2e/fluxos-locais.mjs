@@ -101,6 +101,10 @@ r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: es
 check('Admin da escola B não cria usuário na escola A', !!r.error || r.data?.error);
 r = await adminA.functions.invoke('create-school-user', { body: { escola_id: escA.id, nome: 'X', email: em('x'), cpf: cpf(908), papel: 'SuperAdmin' } });
 check('papel inválido é recusado', !!r.error || r.data?.error);
+r = await adminA.functions.invoke('create-school-user', { body: { escola_id: escA.id, nome: 'Sem CPF', email: em('semcpf'), papel: 'Professor' } });
+check('usuário sem CPF é recusado (perfis.cpf é NOT NULL)', !!r.error || r.data?.error);
+const { data: semcpf } = await admin.auth.admin.listUsers({ perPage: 1000 });
+check('...e nenhuma conta ficou pela metade no Auth', !(semcpf?.users ?? []).some((u) => u.email === em('semcpf')));
 
 // ---------- Gestão de Turmas (Secretaria) ----------
 secao('Gestão de Turmas e Enturmação (Secretaria)');

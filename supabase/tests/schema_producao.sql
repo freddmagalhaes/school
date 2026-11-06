@@ -1,3 +1,4 @@
+-- Tamanhos de varchar/numeric e gatilhos conferidos com pg_get_triggerdef e information_schema em 2026-11-06.
 -- SNAPSHOT DA ESTRUTURA do banco de PRODUÇÃO (projeto wbvsgmlbenuijulpkpzv), exportado em 2026-11-06
 -- pelo SQL Editor (colunas, restrições, enums, funções, gatilhos e políticas). Sem dados.
 -- Serve para rodar os testes de RLS contra o esquema REAL (RLS_BASE=producao).
@@ -18,17 +19,17 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE public.escolas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  nome varchar NOT NULL,
-  cnpj varchar NOT NULL UNIQUE,
+  nome varchar(255) NOT NULL,
+  cnpj varchar(18) NOT NULL UNIQUE,
   created_at timestamptz DEFAULT now(),
-  telefone varchar,
-  formato_avaliacao varchar NOT NULL DEFAULT 'Bimestral',
+  telefone varchar(20),
+  formato_avaliacao varchar(50) NOT NULL DEFAULT 'Bimestral',
   bloquear_notas boolean NOT NULL DEFAULT false
 );
 CREATE TABLE public.perfis (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  nome varchar NOT NULL,
-  cpf varchar NOT NULL UNIQUE,
+  nome varchar(255) NOT NULL,
+  cpf varchar(14) NOT NULL UNIQUE,
   foto_url text,
   created_at timestamptz DEFAULT now(),
   aceitou_termos_em timestamptz
@@ -47,15 +48,15 @@ CREATE TABLE public.membros_escola (
 CREATE TABLE public.turmas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
-  nome varchar NOT NULL,
+  nome varchar(100) NOT NULL,
   ano_letivo integer NOT NULL,
-  turno varchar NOT NULL,
+  turno varchar(50) NOT NULL,
   created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.disciplinas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
-  nome varchar NOT NULL,
+  nome varchar(100) NOT NULL,
   created_at timestamptz DEFAULT now(),
   UNIQUE (escola_id, nome)
 );
@@ -75,7 +76,7 @@ CREATE TABLE public.matriculas (
   aluno_id uuid NOT NULL REFERENCES public.perfis(id) ON DELETE CASCADE,
   status public.status_matricula DEFAULT 'Ativo',
   created_at timestamptz DEFAULT now(),
-  motivo_saida varchar,
+  motivo_saida varchar(255),
   data_saida date,
   UNIQUE (turma_id, aluno_id)
 );
@@ -84,7 +85,7 @@ CREATE TABLE public.notas (
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
   matricula_id uuid NOT NULL REFERENCES public.matriculas(id) ON DELETE CASCADE,
   disciplina_id uuid NOT NULL REFERENCES public.disciplinas(id) ON DELETE CASCADE,
-  valor numeric NOT NULL,
+  valor numeric(5,2) NOT NULL,
   data date NOT NULL DEFAULT CURRENT_DATE,
   arquivada boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
@@ -115,7 +116,7 @@ CREATE TABLE public.matrizes_curriculares (
 CREATE TABLE public.periodos_letivos (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
-  nome varchar NOT NULL,
+  nome varchar(50) NOT NULL,
   ordem smallint NOT NULL,
   ano_letivo integer NOT NULL,
   data_inicio date NOT NULL,
@@ -126,8 +127,8 @@ CREATE TABLE public.periodos_letivos (
 CREATE TABLE public.financeiro_verbas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
-  categoria varchar NOT NULL,
-  valor numeric NOT NULL,
+  categoria varchar(100) NOT NULL,
+  valor numeric(10,2) NOT NULL,
   tipo public.financeiro_tipo NOT NULL,
   data_registro date NOT NULL DEFAULT CURRENT_DATE,
   status_aprovacao public.financeiro_status DEFAULT 'Pendente',
@@ -139,7 +140,7 @@ CREATE TABLE public.faturas (
   escola_id uuid NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
   aluno_id uuid NOT NULL REFERENCES public.membros_escola(id) ON DELETE CASCADE,
   turma_id uuid REFERENCES public.turmas(id) ON DELETE SET NULL,
-  valor numeric NOT NULL,
+  valor numeric(10,2) NOT NULL,
   data_vencimento date NOT NULL,
   data_pagamento date,
   status text DEFAULT 'Pendente' CHECK (status = ANY (ARRAY['Pendente', 'Pago', 'Atrasado', 'Cancelado'])),
@@ -150,15 +151,15 @@ CREATE TABLE public.faturas (
 );
 CREATE TABLE public.assinaturas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  nome varchar NOT NULL,
-  email varchar NOT NULL,
-  documento varchar,
-  telefone varchar,
-  nome_escola varchar NOT NULL,
+  nome varchar(255) NOT NULL,
+  email varchar(255) NOT NULL,
+  documento varchar(20),
+  telefone varchar(20),
+  nome_escola varchar(255) NOT NULL,
   plano public.assinatura_plano NOT NULL,
   ciclo public.assinatura_ciclo NOT NULL,
   metodo_pgto public.assinatura_metodo NOT NULL,
-  valor_total numeric NOT NULL,
+  valor_total numeric(10,2) NOT NULL,
   status public.assinatura_status NOT NULL DEFAULT 'pendente',
   observacoes text,
   created_at timestamptz DEFAULT now(),
@@ -167,8 +168,8 @@ CREATE TABLE public.assinaturas (
 );
 CREATE TABLE public.root_admins (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  nome varchar NOT NULL,
-  email varchar NOT NULL UNIQUE,
+  nome varchar(255) NOT NULL,
+  email varchar(255) NOT NULL UNIQUE,
   role public.root_role NOT NULL DEFAULT 'suporte',
   is_root boolean NOT NULL DEFAULT false,
   is_active boolean NOT NULL DEFAULT true,
@@ -179,7 +180,7 @@ CREATE TABLE public.root_admins (
 CREATE TABLE public.system_settings (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   maintenance_mode boolean DEFAULT false,
-  support_email varchar DEFAULT 'suporte@edugestao.com',
+  support_email varchar(255) DEFAULT 'suporte@edugestao.com',
   default_trial_days integer DEFAULT 14,
   updated_at timestamptz DEFAULT now()
 );
@@ -193,15 +194,15 @@ CREATE TABLE public.contatos (
 );
 CREATE TABLE public.crm_leads_escolas (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  codigo_inep varchar NOT NULL UNIQUE,
-  nome_escola varchar NOT NULL,
-  uf varchar NOT NULL,
-  municipio varchar NOT NULL,
-  dependencia_adm varchar NOT NULL,
-  localizacao varchar NOT NULL,
-  status varchar DEFAULT 'Pendente',
+  codigo_inep varchar(20) NOT NULL UNIQUE,
+  nome_escola varchar(255) NOT NULL,
+  uf varchar(2) NOT NULL,
+  municipio varchar(100) NOT NULL,
+  dependencia_adm varchar(50) NOT NULL,
+  localizacao varchar(50) NOT NULL,
+  status varchar(50) DEFAULT 'Pendente',
   escola_id uuid REFERENCES public.escolas(id),
-  telefone varchar,
+  telefone varchar(50),
   endereco text,
   created_at timestamptz DEFAULT now()
 );
@@ -254,7 +255,7 @@ BEGIN
 END;
 $function$;
 
--- Gatilhos (o snapshot traz só a função; evento e momento seguem o schema.sql do repositório)
+-- Gatilhos (definições exatas de pg_get_triggerdef)
 CREATE TRIGGER on_matricula_status_change AFTER UPDATE OF status ON public.matriculas FOR EACH ROW EXECUTE FUNCTION archive_notas_on_student_leave();
 CREATE TRIGGER trg_assinaturas_updated_at BEFORE UPDATE ON public.assinaturas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER trg_root_admins_updated_at BEFORE UPDATE ON public.root_admins FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

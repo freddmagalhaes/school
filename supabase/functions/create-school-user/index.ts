@@ -49,6 +49,14 @@ serve(async (req) => {
       });
     }
 
+    // perfis.cpf é NOT NULL e varchar(14): confere ANTES de criar a conta no Auth (senão ela ficaria pela metade)
+    if (typeof cpf !== 'string' || cpf.trim() === '' || cpf.length > 14) {
+      return new Response(JSON.stringify({ error: 'Informe o CPF (até 14 caracteres)' }), { status: 400, headers: corsHeaders });
+    }
+    if (String(nome).length > 255) {
+      return new Response(JSON.stringify({ error: 'Nome longo demais (máximo 255 caracteres)' }), { status: 400, headers: corsHeaders });
+    }
+
     // Verifica se o chamador tem permissão para criar usuários nesta escola
     const { data: membroCaller } = await supabaseAdmin
       .from('membros_escola')
@@ -121,7 +129,7 @@ serve(async (req) => {
     // Cria o perfil
     const { error: perfilError } = await supabaseAdmin
       .from('perfis')
-      .upsert({ id: newUserId, nome, cpf: cpf || null, metadata: metadata || {} }, { onConflict: 'id' });
+      .upsert({ id: newUserId, nome, cpf, metadata: metadata || {} }, { onConflict: 'id' });
 
     if (perfilError) {
       // Rollback: deleta o usuário criado no Auth
