@@ -67,11 +67,14 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 
 ---
 
+## Conferência final dos 6 passos
+Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
+
 ## Depois dos passos 1 a 5 (e antes do 6)
 1. **Função de convite.** No seu computador, na pasta do projeto:
    ```bash
    npx supabase login
-   npx supabase secrets set SITE_URL=https://SEU-DOMINIO --project-ref wbvsgmlbenuijulpkpzv
+   npx supabase secrets set SITE_URL=http://localhost:3000 --project-ref wbvsgmlbenuijulpkpzv
    npx supabase functions deploy create-school-user --project-ref wbvsgmlbenuijulpkpzv
    ```
 2. **Painel → Authentication → URL Configuration:** *Site URL* = o endereço do sistema; em *Redirect URLs* inclua `https://SEU-DOMINIO/reset-password` (senão o link do e-mail de primeiro acesso não redireciona certo).
