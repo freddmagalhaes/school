@@ -41,7 +41,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Sessão inválida' }), { status: 401, headers: corsHeaders });
     }
 
-    const { escola_id, nome, email, cpf, papel, tipo_vinculo, metadata } = await req.json();
+    const { escola_id, nome, email, cpf, papel, tipo_vinculo, metadata, aluno_ids, parentesco } = await req.json();
 
     if (!escola_id || !nome || !email || !papel) {
       return new Response(JSON.stringify({ error: 'Campos obrigatórios: escola_id, nome, email, papel' }), {
@@ -69,6 +69,29 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Permissão insuficiente para criar usuários' }), {
         status: 403, headers: corsHeaders
       });
+    }
+
+    const PAPEIS_VALIDOS = ['Admin', 'Diretor', 'Subdiretor', 'Secretaria', 'Professor', 'Aluno', 'Responsavel'];
+    if (!PAPEIS_VALIDOS.includes(papel)) {
+      return new Response(JSON.stringify({ error: 'Papel inválido' }), { status: 400, headers: corsHeaders });
+    }
+
+    // Responsável precisa acompanhar ao menos um aluno desta escola (confere ANTES de criar qualquer coisa)
+    let alunosVinculados: string[] = [];
+    if (papel === 'Responsavel') {
+      alunosVinculados = Array.isArray(aluno_ids) ? [...new Set(aluno_ids as string[])] : [];
+      if (alunosVinculados.length === 0) {
+        return new Response(JSON.stringify({ error: 'Informe ao menos um aluno para o responsável' }), { status: 400, headers: corsHeaders });
+      }
+      const { data: alunosOk } = await supabaseAdmin
+        .from('membros_escola')
+        .select('user_id')
+        .eq('escola_id', escola_id)
+        .eq('papel', 'Aluno')
+        .in('user_id', alunosVinculados);
+      if ((alunosOk || []).length !== alunosVinculados.length) {
+        return new Response(JSON.stringify({ error: 'Há aluno que não pertence a esta escola' }), { status: 400, headers: corsHeaders });
+      }
     }
 
     // Secretaria não pode criar Diretor, Subdiretor ou Secretaria
@@ -125,13 +148,36 @@ serve(async (req) => {
       });
     }
 
-    // Envia o e-mail de primeiro acesso (magic link / reset de senha)
-    await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-    });
+    // Vincula o responsável aos alunos
+    if (papel === 'Responsavel') {
+      const { error: respError } = await supabaseAdmin
+        .from('responsaveis_alunos')
+        .insert(alunosVinculados.map((aluno_id) => ({
+          escola_id, responsavel_id: newUserId, aluno_id, parentesco: parentesco || null,
+        })));
+      if (respError) {
+        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+        return new Response(JSON.stringify({ error: 'Erro ao vincular aos alunos: ' + respError.message }), {
+          status: 500, headers: corsHeaders
+        });
+      }
+    }
 
-    return new Response(JSON.stringify({ success: true, user_id: newUserId }), {
+    // Envia o e-mail de primeiro acesso. (generateLink só GERA o link, não envia nada:
+    // resetPasswordForEmail é quem dispara o e-mail para o usuário definir a senha.)
+    const siteUrl = Deno.env.get('SITE_URL');
+    const { error: emailError } = await supabaseAdmin.auth.resetPasswordForEmail(
+      email,
+      siteUrl ? { redirectTo: `${siteUrl}/reset-password` } : undefined,
+    );
+    if (emailError) {
+      // O usuário foi criado; só o e-mail falhou. A secretaria pode reenviar por "Esqueci minha senha".
+      return new Response(JSON.stringify({ success: true, user_id: newUserId, email_enviado: false, aviso: emailError.message }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, user_id: newUserId, email_enviado: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -100,21 +100,21 @@ CREATE POLICY membros_select ON public.membros_escola FOR SELECT USING (
   user_id = auth.uid()
   OR public.tem_papel(escola_id, 'Admin', 'Diretor', 'Subdiretor', 'Secretaria', 'Professor')
 );
--- Admin gerencia todos os vínculos; Secretaria só Professor e Aluno. (O convite usa a Edge Function com service_role.)
+-- Admin gerencia todos os vínculos; Secretaria só Professor, Aluno e Responsável. (O convite usa a Edge Function com service_role.)
 CREATE POLICY membros_insert ON public.membros_escola FOR INSERT WITH CHECK (
   public.tem_papel(escola_id, 'Admin')
-  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno'))
+  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno', 'Responsavel'))
 );
 CREATE POLICY membros_update ON public.membros_escola FOR UPDATE USING (
   public.tem_papel(escola_id, 'Admin')
-  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno'))
+  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno', 'Responsavel'))
 ) WITH CHECK (
   public.tem_papel(escola_id, 'Admin')
-  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno'))
+  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno', 'Responsavel'))
 );
 CREATE POLICY membros_delete ON public.membros_escola FOR DELETE USING (
   public.tem_papel(escola_id, 'Admin')
-  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno'))
+  OR (public.tem_papel(escola_id, 'Secretaria') AND papel::text IN ('Professor', 'Aluno', 'Responsavel'))
 );
 
 -- ============ Estrutura acadêmica: todos da escola leem; Admin/Diretor/Secretaria escrevem ============

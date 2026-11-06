@@ -126,6 +126,15 @@ describe('Quem gerencia os vínculos', () => {
   });
 });
 
+describe('Secretaria gerencia o acesso do responsável', () => {
+  test('Secretaria remove o vínculo de um responsável, mas não promove ninguém', async () => {
+    const ok = await as(ID.secretariaA, (q) => q("DELETE FROM public.membros_escola WHERE user_id = $1 AND papel = 'Responsavel'", [ID.respA]));
+    assert.equal(ok.rowCount, 1);
+    const no = await as(ID.secretariaA, (q) => q("UPDATE public.membros_escola SET papel = 'Diretor' WHERE user_id = $1", [ID.respA]));
+    assert.ok(blocked(no));
+  });
+});
+
 describe('Funções aceitam o id de turma_alunos (esquema alternativo do app)', () => {
   test('professor, aluno, responsável e escola reconhecidos pelo id de turma_alunos', async () => {
     const { rows } = await admin('SELECT id FROM public.turma_alunos WHERE aluno_id = $1', [MEMBRO.aluno1A]);

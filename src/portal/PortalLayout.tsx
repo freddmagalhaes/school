@@ -30,7 +30,7 @@ export const PortalLayout: React.FC = () => {
                 <GraduationCap className="text-white h-7 w-7" />
               </div>
               <h1 className="text-2xl font-extrabold text-white tracking-tight">
-                Portal do Aluno
+                {escolaAtiva?.papel === 'Responsavel' ? 'Portal da Família' : 'Portal do Aluno'}
                 {escolaAtiva && <span className="font-medium text-indigo-200 ml-3 text-lg opacity-80">| {escolaAtiva.escola.nome}</span>}
               </h1>
             </div>
@@ -38,7 +38,7 @@ export const PortalLayout: React.FC = () => {
             <div className="flex items-center gap-5">
               <div className="hidden sm:flex flex-col items-end text-indigo-100">
                 <span className="text-sm font-bold text-white">{user.email}</span>
-                <span className="text-xs text-indigo-300 font-medium uppercase tracking-widest">Área do Aluno</span>
+                <span className="text-xs text-indigo-300 font-medium uppercase tracking-widest">{escolaAtiva?.papel === 'Responsavel' ? 'Área do Responsável' : 'Área do Aluno'}</span>
               </div>
               <button
                 onClick={signOut}
