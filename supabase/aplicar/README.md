@@ -96,6 +96,10 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **O que faz:** cria as tabelas `atendimentos` e `atendimento_mensagens`. O cliente (Admin, Diretor, Subdiretor, Secretaria e Professor) abre uma conversa pelo botão **Ajuda** dentro do sistema; o suporte (N1, N2, N3 e dono) responde pela caixa de entrada **Backoffice → Atendimento** e pode escalar de N1 para N2 ou N3. Quem é o autor ("cliente" ou "suporte") e o nome vêm do servidor.
 **Conferir:** `verificar/13.sql` (tabelas = 2, politicas = 5, gatilhos = 4, rls_ativo = true). **Desfazer:** `reverter/reverter_13_atendimento.sql` (apaga TODAS as conversas).
 
+## Passo 14: auditoria à prova de falsificação  (`14_audit_log_validacao.sql`)
+**O que faz:** `log_audit()` e a política de INSERT de `audit_logs` passam a gravar só na escola de que a pessoa faz parte (ou do dono do sistema) e nunca com ação `SUPORTE_*` (reservada às funções de suporte). Antes, qualquer usuário logado podia gravar registros falsos na escola de outro cliente.
+**Conferir:** `verificar/14.sql` (politica_antiga = 0, politica_nova = 1, funcao_valida = true). **Desfazer:** `reverter/reverter_14_audit.sql`.
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 

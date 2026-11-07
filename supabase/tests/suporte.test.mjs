@@ -196,3 +196,34 @@ describe('Auditoria', () => {
     }
   });
 });
+
+describe('A auditoria não pode ser falsificada', () => {
+  const rpc = (uid, escola, acao) => as(uid, (q) => q(`SELECT public.log_audit($1, $2, '{}'::jsonb)`, [escola, acao]));
+  const ins = (uid, escola, acao) => as(uid, (q) => q(`INSERT INTO public.audit_logs (user_id, escola_id, acao, detalhes) VALUES ($1, $2, $3, '{}')`, [uid, escola, acao]));
+  test('registro legítimo na própria escola funciona (ex.: ver CPF)', async () => {
+    assert.ok(!(await rpc(ID.adminA, ID.escolaA, 'VISUALIZOU_CPF_USUARIO')).error);
+    assert.ok(!(await ins(ID.adminA, ID.escolaA, 'VISUALIZOU_CPF_USUARIO')).error);
+  });
+  test('o dono pode registrar em qualquer escola', async () => {
+    assert.ok(!(await rpc(OP.dono, ID.escolaB, 'VISUALIZOU_CPF_USUARIO')).error);
+  });
+  test('não dá para gravar na escola de outro cliente (função e INSERT direto)', async () => {
+    assert.ok((await rpc(ID.adminA, ID.escolaB, 'QUALQUER_COISA')).error);
+    assert.ok((await ins(ID.adminA, ID.escolaB, 'QUALQUER_COISA')).error);
+    assert.ok((await rpc(ID.aluno1B, ID.escolaA, 'QUALQUER_COISA')).error);
+  });
+  test('ações SUPORTE_* são reservadas: nem o dono grava à mão', async () => {
+    for (const u of [ID.adminA, OP.n3, OP.dono]) {
+      assert.ok((await rpc(u, ID.escolaA, 'SUPORTE_VER_ALUNO')).error, 'rpc ' + u);
+      assert.ok((await ins(u, ID.escolaA, 'SUPORTE_VER_ALUNO')).error, 'insert ' + u);
+    }
+  });
+  test('não dá para gravar em nome de outro usuário', async () => {
+    const r = await as(ID.adminA, (q) => q(`INSERT INTO public.audit_logs (user_id, escola_id, acao, detalhes) VALUES ($1, $2, 'X', '{}')`, [ID.adminB, ID.escolaA]));
+    assert.ok(r.error);
+  });
+  test('visitante não grava', async () => {
+    assert.ok((await rpc(null, ID.escolaA, 'X')).error);
+  });
+});
+
