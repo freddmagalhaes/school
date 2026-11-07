@@ -1,4 +1,4 @@
--- Passo 13. Esperado: tabelas = 2, politicas = 6, gatilhos = 5, rls_ativo = true nas duas.
+-- Passo 13. Esperado: tabelas = 2, politicas = 5, gatilhos = 4, rls_ativo = true.
 select
   (select count(*) from pg_tables where schemaname = 'public' and tablename in ('atendimentos', 'atendimento_mensagens')) as tabelas,
   (select count(*) from pg_policies where tablename in ('atendimentos', 'atendimento_mensagens')) as politicas,
