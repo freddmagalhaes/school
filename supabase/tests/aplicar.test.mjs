@@ -13,6 +13,10 @@ const pares = [
   ['04_vinculos_responsavel.sql', '20261106000300_responsavel_vinculos.sql'],
   ['05_indices.sql', '20261106000400_indices.sql'],
   ['06_privilegios.sql', '20261106000500_privilegios.sql'],
+  ['07_root_le_escolas.sql', '20261106000600_root_le_escolas.sql'],
+  ['08_root_cria_escola.sql', '20261106000700_root_cria_escola.sql'],
+  ['09_horarios_e_carga.sql', '20261106000800_horarios_e_carga.sql'],
+  ['10_root_gerencia_estrutura.sql', '20261106000900_root_gerencia_estrutura.sql'],
 ];
 for (const [aplicar, migration] of pares) {
   test(`aplicar/${aplicar} é cópia de migrations/${migration}`, () => {

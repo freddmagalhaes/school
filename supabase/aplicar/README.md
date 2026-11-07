@@ -75,6 +75,14 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **O que faz:** libera `INSERT` em `escolas` só para o dono do sistema (botão "Criar escola e enviar acesso" no detalhe do cliente).
 **Conferir:** `verificar/08.sql` (1 linha). **Desfazer:** `reverter/reverter_08_root_cria_escola.sql`.
 
+## Passo 9: grade de horários e carga horária  (`09_horarios_e_carga.sql`)
+**O que faz:** cria a tabela `horarios_aula` (dia, início, fim, turma, disciplina, professor), recusa conflito de horário (da turma, do professor na mesma escola e do professor em **outra** escola, sem revelar qual) e a coluna `membros_escola.carga_horaria_semanal`.
+**Conferir:** `verificar/09.sql` (rls_ativo = true, politicas = 3, gatilhos = 2, coluna_carga = 1). **Desfazer:** `reverter/reverter_09_horarios.sql` (apaga a grade lançada).
+
+## Passo 10: root gerencia a estrutura acadêmica  (`10_root_gerencia_estrutura.sql`)
+**O que faz:** o dono do sistema grava turmas, disciplinas, professores da turma, enturmação e horários de qualquer escola (suporte). Não inclui notas, frequência nem financeiro.
+**Conferir:** `verificar/10.sql` (6 políticas `root_gerencia_*`). **Desfazer:** `reverter/reverter_10_root_estrutura.sql`.
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 

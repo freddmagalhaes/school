@@ -22,6 +22,7 @@ export const GestaoDisciplinas: React.FC = () => {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState('');
+  const [erro, setErro] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ id: '', nome: '' });
 
@@ -43,18 +44,25 @@ export const GestaoDisciplinas: React.FC = () => {
   const handleSalvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!escolaId) return;
-    if (form.id) {
-      await supabase.from('disciplinas').update({ nome: form.nome }).eq('id', form.id);
-    } else {
-      await supabase.from('disciplinas').insert({ escola_id: escolaId, nome: form.nome });
-    }
+    setErro('');
+    const { data, error } = form.id
+      ? await supabase.from('disciplinas').update({ nome: form.nome }).eq('id', form.id).select('id')
+      : await supabase.from('disciplinas').insert({ escola_id: escolaId, nome: form.nome }).select('id');
     setShowModal(false);
+    if (error || !data || data.length === 0) {
+      setErro(error?.code === '23505'
+        ? 'Já existe uma disciplina com este nome nesta escola.'
+        : 'Não foi possível salvar a disciplina. Você pode não ter permissão nesta escola.');
+      return;
+    }
     carregarDisciplinas();
   };
 
   const handleExcluir = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta disciplina? Isso removerá os vínculos de professores e notas associadas!')) return;
-    await supabase.from('disciplinas').delete().eq('id', id);
+    setErro('');
+    const { data, error } = await supabase.from('disciplinas').delete().eq('id', id).select('id');
+    if (error || !data || data.length === 0) setErro('Não foi possível excluir a disciplina. Você pode não ter permissão nesta escola.');
     carregarDisciplinas();
   };
 
@@ -73,6 +81,10 @@ export const GestaoDisciplinas: React.FC = () => {
           loading={loadingEscolas}
         />
       ) : null}
+
+      {erro && (
+        <div className="p-3 rounded-lg border text-sm bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30">{erro}</div>
+      )}
 
       {!escolaId ? (
         !loadingEscolas && (

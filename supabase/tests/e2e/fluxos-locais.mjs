@@ -135,6 +135,45 @@ const { data: semcpf } = await admin.auth.admin.listUsers({ perPage: 1000 });
 check('...e nenhuma conta ficou pela metade no Auth', !(semcpf?.users ?? []).some((u) => u.email === em('semcpf')));
 
 // ---------- Gestão de Turmas (Secretaria) ----------
+secao('Grade de horários (mesmas consultas da tela)');
+{
+  const profG = await criarUsuario('Professor G', em('profG'), cpf(990));
+  await vincular(escA.id, profG, 'Professor');
+  const { data: tG } = await admin.from('turmas').insert({ escola_id: escA.id, nome: 'G1', ano_letivo: 2026, turno: 'Matutino' }).select().single();
+  const { data: tG2 } = await admin.from('turmas').insert({ escola_id: escA.id, nome: 'G2', ano_letivo: 2026, turno: 'Vespertino' }).select().single();
+  const { data: dG } = await admin.from('disciplinas').insert({ escola_id: escA.id, nome: 'Mat G' }).select().single();
+  const { data: tB } = await admin.from('turmas').insert({ escola_id: escB.id, nome: 'GB', ano_letivo: 2026, turno: 'Matutino' }).select().single();
+  const { data: dB } = await admin.from('disciplinas').insert({ escola_id: escB.id, nome: 'Mat B' }).select().single();
+  await admin.from('turma_professores').insert([{ escola_id: escA.id, turma_id: tG.id, professor_id: profG, disciplina_id: dG.id }, { escola_id: escA.id, turma_id: tG2.id, professor_id: profG, disciplina_id: dG.id }]);
+  await vincular(escB.id, profG, 'Professor');
+  await admin.from('turma_professores').insert({ escola_id: escB.id, turma_id: tB.id, professor_id: profG, disciplina_id: dB.id });
+  const nova = (c, escola, turma, disc, dia, ini, fim) => c.from('horarios_aula').insert({ escola_id: escola, turma_id: turma, professor_id: profG, disciplina_id: disc, dia_semana: dia, hora_inicio: ini, hora_fim: fim });
+
+  let g = await nova(adminA, escA.id, tG.id, dG.id, 1, '07:00', '07:50');
+  check('Admin lança aula na grade', !g.error, g.error?.message);
+  g = await nova(adminA, escA.id, tG2.id, dG.id, 1, '07:30', '08:20');
+  check('conflito do professor na mesma escola volta com código 23P01 e mensagem pronta', g.error?.code === '23P01' && /nesta escola \(turma G1\)/.test(g.error?.message), JSON.stringify(g.error));
+  g = await nova(adminBc, escB.id, tB.id, dB.id, 1, '07:10', '07:40');
+  check('conflito entre escolas é recusado sem revelar a outra escola', g.error?.code === '23P01' && /em outra escola/.test(g.error?.message) && !/G1|G2|Mat G/.test(g.error?.message), JSON.stringify(g.error));
+  g = await nova(adminBc, escB.id, tB.id, dB.id, 1, '14:00', '14:50');
+  check('na escola B, em outro horário, entra', !g.error, g.error?.message);
+
+  // consulta da visão "por turma"
+  const vt = await adminA.from('horarios_aula').select('id, dia_semana, hora_inicio, hora_fim, perfis:professor_id (nome), disciplinas:disciplina_id (nome)').eq('turma_id', tG.id);
+  check('visão por turma devolve a aula com nome do professor e da disciplina', vt.data?.length === 1 && vt.data[0].perfis?.nome === 'Professor G' && vt.data[0].disciplinas?.nome === 'Mat G', JSON.stringify(vt));
+  // consulta da agenda do próprio professor, nas duas escolas
+  const prof = await como(em('profG'));
+  const mi = await prof.from('horarios_aula').select('id, dia_semana, hora_inicio, hora_fim, escolas:escola_id (nome), turmas:turma_id (nome, turno), disciplinas:disciplina_id (nome)').eq('professor_id', profG);
+  check('agenda do professor mostra as aulas das DUAS escolas, com nome da escola', mi.data?.length === 2 && new Set(mi.data.map((a) => a.escolas?.nome)).size === 2, JSON.stringify(mi));
+  const noProf = await prof.from('horarios_aula').insert({ escola_id: escA.id, turma_id: tG.id, professor_id: profG, disciplina_id: dG.id, dia_semana: 3, hora_inicio: '07:00', hora_fim: '08:00' });
+  check('Professor não grava na grade', !!noProf.error);
+  const alu = await como(em('al1'));
+  const va = await alu.from('horarios_aula').select('id');
+  check('Aluno não enxerga a grade', (va.data ?? []).length === 0);
+  const rh = await adminA.from('membros_escola').update({ carga_horaria_semanal: 20 }).eq('user_id', profG).eq('escola_id', escA.id).select('carga_horaria_semanal');
+  check('Admin define a carga horária contratada (RH)', rh.data?.[0]?.carga_horaria_semanal === 20, JSON.stringify(rh));
+}
+
 secao('Gestão de Turmas e Enturmação (Secretaria)');
 let q = await secA.from('turmas').insert({ escola_id: escA.id, nome: '5A', ano_letivo: 2026, turno: 'Manhã' }).select().single();
 check('cria turma', !q.error, q.error?.message);

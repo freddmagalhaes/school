@@ -48,4 +48,25 @@ describe('Root lê as escolas', () => {
       assert.ok(r.error, String(uid));
     }
   });
+
+  test('root grava a estrutura acadêmica de qualquer escola (turma, disciplina, professor da turma, horário)', async () => {
+    await as(ROOT, async (q) => {
+      const t = await q(`INSERT INTO public.turmas (escola_id, nome, ano_letivo, turno) VALUES ($1,'R1',2026,'Matutino') RETURNING id`, [ID.escolaA]);
+      assert.ok(!t.error, t.error?.message);
+      const d = await q(`INSERT INTO public.disciplinas (escola_id, nome) VALUES ($1,'Disc Root') RETURNING id`, [ID.escolaA]);
+      assert.ok(!d.error, d.error?.message);
+      const tp = await q(`INSERT INTO public.turma_professores (escola_id, turma_id, professor_id, disciplina_id) VALUES ($1,$2,$3,$4)`, [ID.escolaA, t.rows[0].id, ID.profA, d.rows[0].id]);
+      assert.ok(!tp.error, tp.error?.message);
+      const h = await q(`INSERT INTO public.horarios_aula (escola_id, turma_id, professor_id, disciplina_id, dia_semana, hora_inicio, hora_fim) VALUES ($1,$2,$3,$4,2,'07:00','07:50')`, [ID.escolaA, t.rows[0].id, ID.profA, d.rows[0].id]);
+      assert.ok(!h.error, h.error?.message);
+      const u = await q(`UPDATE public.turmas SET nome = 'R1b' WHERE id = $1`, [t.rows[0].id]);
+      assert.equal(u.rowCount, 1);
+      const x = await q(`DELETE FROM public.turmas WHERE id = $1`, [t.rows[0].id]);
+      assert.equal(x.rowCount, 1);
+    });
+  });
+  test('suporte (não-root) continua sem gravar estrutura', async () => {
+    const r = await as(ID.operador, (q) => q(`INSERT INTO public.turmas (escola_id, nome, ano_letivo, turno) VALUES ($1,'X',2026,'Manhã')`, [ID.escolaA]));
+    assert.ok(r.error);
+  });
 });

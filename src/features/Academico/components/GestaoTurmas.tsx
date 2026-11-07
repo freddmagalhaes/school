@@ -54,6 +54,7 @@ export const GestaoTurmas: React.FC = () => {
   const [formProf, setFormProf] = useState({ professor_id: '', disciplina_id: '' });
   const [salvandoProf, setSalvandoProf] = useState(false);
   const [erroProf, setErroProf] = useState('');
+  const [erroTurma, setErroTurma] = useState('');
 
   useEffect(() => {
     if (escolaId) {
@@ -97,15 +98,22 @@ export const GestaoTurmas: React.FC = () => {
   const handleSalvarTurma = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!escolaId) return;
-    if (formTurma.id) {
-      await supabase.from('turmas').update({
-        nome: formTurma.nome, ano_letivo: formTurma.ano_letivo, turno: formTurma.turno
-      }).eq('id', formTurma.id);
-    } else {
-      await supabase.from('turmas').insert({
-        escola_id: escolaId,
-        nome: formTurma.nome, ano_letivo: formTurma.ano_letivo, turno: formTurma.turno
-      });
+    setErroTurma('');
+    // .select() devolve as linhas gravadas: se vier vazio, o banco recusou (permissão) e nada foi salvo
+    const { data, error } = formTurma.id
+      ? await supabase.from('turmas').update({
+          nome: formTurma.nome, ano_letivo: formTurma.ano_letivo, turno: formTurma.turno
+        }).eq('id', formTurma.id).select('id')
+      : await supabase.from('turmas').insert({
+          escola_id: escolaId,
+          nome: formTurma.nome, ano_letivo: formTurma.ano_letivo, turno: formTurma.turno
+        }).select('id');
+    if (error || !data || data.length === 0) {
+      setShowModalTurma(false);
+      setErroTurma(error?.code === '23505'
+        ? 'Já existe uma turma com este nome neste ano letivo.'
+        : 'Não foi possível salvar a turma. Você pode não ter permissão nesta escola.');
+      return;
     }
     setShowModalTurma(false);
     carregarTurmas();
@@ -113,7 +121,9 @@ export const GestaoTurmas: React.FC = () => {
 
   const handleExcluirTurma = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta turma? Matrículas, notas e frequências também serão removidas!')) return;
-    await supabase.from('turmas').delete().eq('id', id);
+    setErroTurma('');
+    const { data, error } = await supabase.from('turmas').delete().eq('id', id).select('id');
+    if (error || !data || data.length === 0) setErroTurma('Não foi possível excluir a turma. Você pode não ter permissão nesta escola.');
     carregarTurmas();
   };
 
@@ -166,6 +176,10 @@ export const GestaoTurmas: React.FC = () => {
           setEscolaRootId={setEscolaRootId}
           loading={loadingEscolas}
         />
+      )}
+
+      {erroTurma && (
+        <div className="p-3 rounded-lg border text-sm bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30">{erroTurma}</div>
       )}
 
       {!escolaId ? (

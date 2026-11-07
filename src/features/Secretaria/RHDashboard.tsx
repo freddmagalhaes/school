@@ -19,6 +19,8 @@ interface Profissional {
   papel: ProfissionalPapel;
   tipo_vinculo: VinculoTipo;
   data_fim: string | null;
+  user_id: string;
+  carga_horaria_semanal: number | null;
 }
 
  export const RHDashboard: React.FC = () => {
@@ -32,6 +34,8 @@ interface Profissional {
    const [showCreateModal, setShowCreateModal] = useState(false);
    const [selectedProfissional, setSelectedProfissional] = useState<Profissional | null>(null);
    const [dataFimEdicao, setDataFimEdicao] = useState('');
+   const [cargaEdicao, setCargaEdicao] = useState<string>('');
+   const [minutosNaGrade, setMinutosNaGrade] = useState<Record<string, number>>({});
    const [tipoVinculoEdicao, setTipoVinculoEdicao] = useState<VinculoTipo>('Efetivo');
    const [salvandoProfissional, setSalvandoProfissional] = useState(false);
    const [erroProfissional, setErroProfissional] = useState('');
@@ -58,7 +62,7 @@ interface Profissional {
 
     const { data, error } = await supabase
       .from('membros_escola')
-      .select('id, papel, tipo_vinculo, data_fim, perfis:perfis (nome, cpf)')
+      .select('id, user_id, papel, tipo_vinculo, data_fim, carga_horaria_semanal, perfis:perfis (nome, cpf)')
       .eq('escola_id', escolaAtiva.escola_id)
       .in('papel', ['Admin', 'Diretor', 'Subdiretor', 'Secretaria', 'Professor'])
       .order('papel', { ascending: true });
@@ -72,11 +76,25 @@ interface Profissional {
           papel: item.papel,
           tipo_vinculo: item.tipo_vinculo,
           data_fim: item.data_fim,
+          user_id: item.user_id,
+          carga_horaria_semanal: item.carga_horaria_semanal,
         }))
       );
     } else {
       setProfissionais([]);
     }
+
+    // Horas que cada professor já tem na grade desta escola (para comparar com a carga contratada)
+    const { data: aulas } = await supabase
+      .from('horarios_aula')
+      .select('professor_id, hora_inicio, hora_fim')
+      .eq('escola_id', escolaAtiva.escola_id);
+    const soma: Record<string, number> = {};
+    for (const a of (aulas || []) as { professor_id: string; hora_inicio: string; hora_fim: string }[]) {
+      const min = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+      soma[a.professor_id] = (soma[a.professor_id] || 0) + (min(a.hora_fim) - min(a.hora_inicio));
+    }
+    setMinutosNaGrade(soma);
 
     setLoading(false);
   };
@@ -87,6 +105,7 @@ interface Profissional {
     setSelectedProfissional(prof);
     setTipoVinculoEdicao(prof.tipo_vinculo);
     setDataFimEdicao(prof.data_fim || '');
+    setCargaEdicao(prof.carga_horaria_semanal != null ? String(prof.carga_horaria_semanal) : '');
     setErroProfissional('');
     setShowModal(true);
   };
@@ -106,10 +125,15 @@ interface Profissional {
 
   const handleSalvarProfissional = async () => {
     if (!selectedProfissional || !escolaAtiva) return;
+    const carga = cargaEdicao.trim() === '' ? null : Number(cargaEdicao);
+    if (carga !== null && (!Number.isInteger(carga) || carga < 0 || carga > 80)) {
+      setErroProfissional('A carga horária semanal deve ser um número inteiro de 0 a 80.');
+      return;
+    }
     setSalvandoProfissional(true);
     const { error } = await supabase
       .from('membros_escola')
-      .update({ tipo_vinculo: tipoVinculoEdicao, data_fim: dataFimEdicao || null })
+      .update({ tipo_vinculo: tipoVinculoEdicao, data_fim: dataFimEdicao || null, carga_horaria_semanal: carga })
       .eq('id', selectedProfissional.id);
 
     setSalvandoProfissional(false);
@@ -194,8 +218,8 @@ interface Profissional {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestão de Equipe (RH)</h2>
-          <p className="text-sm text-gray-500">Unidade Escolar: {escolaAtiva?.escola.nome}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Gestão de Equipe (RH)</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Unidade Escolar: {escolaAtiva?.escola.nome}</p>
         </div>
         <button
           type="button"
@@ -207,24 +231,24 @@ interface Profissional {
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
           <input
             type="text"
             placeholder="Buscar por nome ou CPF..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter size={18} className="text-gray-400" />
+          <Filter size={18} className="text-gray-400 dark:text-gray-500" />
           <select
             value={filtroVinculo}
             onChange={(e) => setFiltroVinculo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:flex-none appearance-none"
+            className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:flex-none appearance-none"
           >
             <option value="Todos">Todos os Vínculos</option>
             <option value="Efetivo">Efetivos</option>
@@ -236,24 +260,25 @@ interface Profissional {
       <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
+              <tr className="bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-slate-700">
                 <th className="px-6 py-3 font-medium">Profissional</th>
                 <th className="px-6 py-3 font-medium">Cargo</th>
                 <th className="px-6 py-3 font-medium">Vínculo</th>
+                <th className="px-6 py-3 font-medium">Carga semanal</th>
                 <th className="px-6 py-3 font-medium">Vencimento Contrato</th>
                 <th className="px-6 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Carregando profissionais...
                   </td>
                 </tr>
               ) : dadosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     Nenhum profissional encontrado com os filtros atuais.
                   </td>
                 </tr>
@@ -265,16 +290,16 @@ interface Profissional {
                   }
 
                   return (
-                    <tr key={prof.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr key={prof.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex flex-shrink-0 items-center justify-center font-bold text-xs ring-2 ring-white">
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 flex flex-shrink-0 items-center justify-center font-bold text-xs ring-2 ring-white">
                             {prof.nome.charAt(0)}
                           </div>
                           <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{prof.nome}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{prof.nome}</p>
                             <div className="flex items-center gap-2">
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {prof.cpf && prof.cpf !== 'N/A' 
                                   ? (cpfsRevelados[prof.id] ? prof.cpf : mascararCPF(prof.cpf)) 
                                   : 'N/A'}
@@ -283,7 +308,7 @@ interface Profissional {
                                 <button 
                                   onClick={() => toggleMostrarCpf(prof.id, prof.nome)}
                                   title={cpfsRevelados[prof.id] ? "Ocultar CPF" : "Revelar CPF (Ação auditada)"}
-                                  className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                  className="text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
                                 >
                                   {cpfsRevelados[prof.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                                 </button>
@@ -292,15 +317,29 @@ interface Profissional {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{prof.papel}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">{prof.papel}</td>
                       <td className="px-6 py-4">
                         <StatusBadge tipo={prof.tipo_vinculo as any} diasAteVencimento={diasParaVencer} />
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                        {(() => {
+                          const naGrade = (minutosNaGrade[prof.user_id] || 0) / 60;
+                          const contratada = prof.carga_horaria_semanal;
+                          const excede = contratada != null && naGrade > contratada;
+                          if (contratada == null && naGrade === 0) return <span className="text-gray-400 dark:text-gray-500">-</span>;
+                          return (
+                            <span className={excede ? 'text-red-600 dark:text-red-300 font-semibold' : ''} title={excede ? 'A grade passa da carga contratada' : undefined}>
+                              {contratada != null ? `${contratada}h contratadas` : 'sem carga definida'}
+                              {naGrade > 0 && <span className="block text-xs text-gray-400 dark:text-gray-500">{naGrade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h na grade</span>}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-4 text-sm">
                         {prof.tipo_vinculo === 'Efetivo' ? (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
                         ) : (
-                          <span className={diasParaVencer !== undefined && diasParaVencer <= 30 ? 'text-red-600 font-semibold flex items-center gap-1' : 'text-gray-600'}>
+                          <span className={diasParaVencer !== undefined && diasParaVencer <= 30 ? 'text-red-600 dark:text-red-300 font-semibold flex items-center gap-1' : 'text-gray-600 dark:text-gray-300'}>
                             {diasParaVencer} dias
                           </span>
                         )}
@@ -310,7 +349,7 @@ interface Profissional {
                           <button
                             type="button"
                             onClick={() => abrirModalEditarProfissional(prof)}
-                            className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-indigo-300 text-sm font-medium"
                           >
                             <Edit2 size={16} />
                             Editar
@@ -318,7 +357,7 @@ interface Profissional {
                           <button
                             type="button"
                             onClick={() => handleRemoverProfissional(prof.id)}
-                            className="inline-flex items-center gap-2 text-red-600 hover:text-red-900 text-sm font-medium"
+                            className="inline-flex items-center gap-2 text-red-600 dark:text-red-300 hover:text-red-900 dark:hover:text-red-300 text-sm font-medium"
                           >
                             <Trash2 size={16} />
                             Remover
@@ -334,23 +373,23 @@ interface Profissional {
         </div>
 
       {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
           {feedback}
         </div>
       )}
 
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Novo Profissional</h2>
-                <p className="text-sm text-gray-500">Crie um novo usuário de RH e vincule-o à escola.</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Novo Profissional</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Crie um novo usuário de RH e vincule-o à escola.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               >
                 Fechar
               </button>
@@ -358,41 +397,41 @@ interface Profissional {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nome completo</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Nome completo</label>
                 <input
                   value={novoProfissional.nome}
                   onChange={(e) => setNovoProfissional((prev) => ({ ...prev, nome: e.target.value }))}
-                  className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                   placeholder="Nome do profissional"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">E-mail</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">E-mail</label>
                 <input
                   type="email"
                   value={novoProfissional.email}
                   onChange={(e) => setNovoProfissional((prev) => ({ ...prev, email: e.target.value }))}
-                  className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                   placeholder="usuario@escola.com"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">CPF</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">CPF</label>
                   <input
                     value={novoProfissional.cpf}
                     onChange={(e) => setNovoProfissional((prev) => ({ ...prev, cpf: formatarCPF(e.target.value) }))}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                     placeholder="000.000.000-00"
                     maxLength={14}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Cargo</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Cargo</label>
                   <select
                     value={novoProfissional.papel}
                     onChange={(e) => setNovoProfissional((prev) => ({ ...prev, papel: e.target.value as ProfissionalPapel }))}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="Admin">Admin</option>
                     <option value="Diretor">Diretor</option>
@@ -404,11 +443,11 @@ interface Profissional {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Tipo de vínculo</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Tipo de vínculo</label>
                   <select
                     value={novoProfissional.tipo_vinculo}
                     onChange={(e) => setNovoProfissional((prev) => ({ ...prev, tipo_vinculo: e.target.value as VinculoTipo }))}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="Efetivo">Efetivo</option>
                     <option value="Designado">Designado</option>
@@ -416,24 +455,24 @@ interface Profissional {
                 </div>
                 {novoProfissional.tipo_vinculo === 'Designado' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Data fim do vínculo</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Data fim do vínculo</label>
                     <input
                       type="date"
                       value={novoProfissional.data_fim}
                       onChange={(e) => setNovoProfissional((prev) => ({ ...prev, data_fim: e.target.value }))}
-                      className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                      className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 )}
               </div>
-              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              {createError && <p className="text-sm text-red-600 dark:text-red-300">{createError}</p>}
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-900"
               >
                 Cancelar
               </button>
@@ -452,50 +491,61 @@ interface Profissional {
 
       {showModal && selectedProfissional && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Editar vínculo de {selectedProfissional.nome}</h2>
-                <p className="text-sm text-gray-500">Atualize tipo de vínculo e data de encerramento.</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar vínculo de {selectedProfissional.nome}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Atualize tipo de vínculo e data de encerramento.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               >
                 Fechar
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Tipo de vínculo</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Tipo de vínculo</label>
                 <select
                   value={tipoVinculoEdicao}
                   onChange={(e) => setTipoVinculoEdicao(e.target.value as VinculoTipo)}
-                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="Efetivo">Efetivo</option>
                   <option value="Designado">Designado</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Carga horária semanal contratada (horas)</label>
+                <input
+                  type="number" min={0} max={80} step={1}
+                  value={cargaEdicao}
+                  onChange={(e) => setCargaEdicao(e.target.value)}
+                  placeholder="Ex.: 20"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Nesta escola. Quem atua em duas escolas tem uma carga em cada uma.</p>
+              </div>
               {tipoVinculoEdicao === 'Designado' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Data fim do vínculo</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Data fim do vínculo</label>
                   <input
                     type="date"
                     value={dataFimEdicao}
                     onChange={(e) => setDataFimEdicao(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               )}
-              {erroProfissional && <p className="text-sm text-red-600">{erroProfissional}</p>}
+              {erroProfissional && <p className="text-sm text-red-600 dark:text-red-300">{erroProfissional}</p>}
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-900"
               >
                 Cancelar
               </button>
