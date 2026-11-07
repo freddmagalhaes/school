@@ -1,4 +1,4 @@
--- Passo 9. Esperado: tabela horarios_aula com rls = true, 3 políticas, 2 gatilhos e a coluna carga_horaria_semanal.
+-- Passo 9. Esperado: rls_ativo = true, politicas = 3 (4 se o passo 10 já foi aplicado: ele soma root_gerencia_horarios_aula), gatilhos = 2, coluna_carga = 1.
 select
   (select relrowsecurity from pg_class where oid = 'public.horarios_aula'::regclass) as rls_ativo,
   (select count(*) from pg_policies where tablename = 'horarios_aula') as politicas,
