@@ -206,7 +206,7 @@ export const DiarioClasse: React.FC = () => {
           />
         )}
         {!loadingEscolas && (
-          <div className="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-200">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
             Selecione uma escola acima para acessar o diário.
           </div>
         )}
@@ -217,13 +217,13 @@ export const DiarioClasse: React.FC = () => {
   return (
     <div className="flex gap-6 items-start">
       {/* Sidebar de Turmas */}
-      <div className="w-60 shrink-0 bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sticky top-6">
-        <h2 className="font-bold text-gray-900 mb-4 px-2 text-sm uppercase tracking-wide">Suas Disciplinas</h2>
+      <div className="w-60 shrink-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm p-4 sticky top-6">
+        <h2 className="font-bold text-gray-900 dark:text-gray-100 mb-4 px-2 text-sm uppercase tracking-wide">Suas Disciplinas</h2>
 
         {loading ? (
           <div className="text-sm text-gray-400 px-2">Carregando...</div>
         ) : turmas.length === 0 ? (
-          <div className="text-sm text-gray-500 px-2">Nenhuma turma ou disciplina vinculada a você.</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 px-2">Nenhuma turma ou disciplina vinculada a você.</div>
         ) : (
           <div className="space-y-1">
             {turmas.map(t => (
@@ -232,8 +232,8 @@ export const DiarioClasse: React.FC = () => {
                 onClick={() => selecionarTurma(t)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   turmaSelecionada?.turma_id === t.turma_id && turmaSelecionada?.disciplina_id === t.disciplina_id
-                    ? 'bg-indigo-50 text-indigo-700 font-bold'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-900'
                 }`}
               >
                 <div className="truncate font-medium">{t.turma_nome}</div>
@@ -245,7 +245,7 @@ export const DiarioClasse: React.FC = () => {
       </div>
 
       {/* Conteúdo do Diário */}
-      <div className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
         {!turmaSelecionada ? (
           <div className="p-12 text-center text-gray-400">
             <BookOpen size={48} className="mx-auto mb-4 opacity-40" />
@@ -253,19 +253,19 @@ export const DiarioClasse: React.FC = () => {
           </div>
         ) : (
           <div>
-            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-wrap justify-between items-center gap-4">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex flex-wrap justify-between items-center gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{turmaSelecionada.turma_nome}</h2>
-                <p className="text-sm text-indigo-600 font-semibold">{turmaSelecionada.disciplina_nome}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{turmaSelecionada.turma_nome}</h2>
+                <p className="text-sm text-indigo-600 dark:text-indigo-300 font-semibold">{turmaSelecionada.disciplina_nome}</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
                   <Calendar size={18} className="text-gray-400" />
                   <input
                     type="date"
                     value={dataDiario}
                     onChange={e => setDataDiario(e.target.value)}
-                    className="text-sm font-medium text-gray-700 focus:outline-none bg-transparent"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none bg-transparent"
                   />
                 </div>
                 <button
@@ -279,14 +279,14 @@ export const DiarioClasse: React.FC = () => {
             </div>
 
             {msgStatus && (
-              <div className={`px-6 py-3 text-sm font-medium ${msgStatus.includes('Erro') ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+              <div className={`px-6 py-3 text-sm font-medium ${msgStatus.includes('Erro') ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'}`}>
                 {msgStatus}
               </div>
             )}
 
             <div className="p-6 overflow-auto">
               <table className="w-full text-left">
-                <thead className="text-xs uppercase text-gray-500 border-b border-gray-200">
+                <thead className="text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-slate-700">
                   <tr>
                     <th className="pb-3 font-bold w-12 text-center">Nº</th>
                     <th className="pb-3 font-bold">Aluno</th>
@@ -294,27 +294,27 @@ export const DiarioClasse: React.FC = () => {
                     <th className="pb-3 font-bold w-32 text-center">Nota</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                   {alunos.length === 0 ? (
-                    <tr><td colSpan={4} className="py-8 text-center text-gray-500">Nenhum aluno matriculado nesta turma.</td></tr>
+                    <tr><td colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">Nenhum aluno matriculado nesta turma.</td></tr>
                   ) : (
                     alunos.map((aluno, idx) => (
-                      <tr key={aluno.id} className="hover:bg-gray-50/50">
+                      <tr key={aluno.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
                         <td className="py-3 text-center text-gray-400 font-medium">{idx + 1}</td>
-                        <td className="py-3 font-medium text-gray-900">{aluno.nome}</td>
+                        <td className="py-3 font-medium text-gray-900 dark:text-gray-100">{aluno.nome}</td>
                         <td className="py-3">
                           <div className="flex justify-center gap-2">
                             <button
                               onClick={() => setFrequencias({ ...frequencias, [aluno.matricula_id]: true })}
                               title="Presente"
-                              className={`p-1.5 rounded-md transition-colors ${frequencias[aluno.matricula_id] !== false ? 'bg-emerald-100 text-emerald-700' : 'text-gray-300 hover:bg-gray-100'}`}
+                              className={`p-1.5 rounded-md transition-colors ${frequencias[aluno.matricula_id] !== false ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
                             >
                               <CheckCircle2 size={20} />
                             </button>
                             <button
                               onClick={() => setFrequencias({ ...frequencias, [aluno.matricula_id]: false })}
                               title="Falta"
-                              className={`p-1.5 rounded-md transition-colors ${frequencias[aluno.matricula_id] === false ? 'bg-red-100 text-red-700' : 'text-gray-300 hover:bg-gray-100'}`}
+                              className={`p-1.5 rounded-md transition-colors ${frequencias[aluno.matricula_id] === false ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' : 'text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
                             >
                               <XCircle size={20} />
                             </button>
@@ -327,7 +327,7 @@ export const DiarioClasse: React.FC = () => {
                               value={notas[aluno.matricula_id] || ''}
                               onChange={e => setNotas({ ...notas, [aluno.matricula_id]: e.target.value })}
                               placeholder="—"
-                              className="w-16 text-center py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 bg-white"
+                              className="w-16 text-center py-1.5 border border-gray-300 dark:border-slate-600 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800"
                             />
                           </div>
                         </td>

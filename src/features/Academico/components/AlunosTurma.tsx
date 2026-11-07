@@ -143,8 +143,8 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
     <div className="space-y-4">
       {/* Header da aba */}
       <div className="flex justify-between items-center">
-        <p className="text-sm text-gray-600">
-          <span className="font-bold text-indigo-700">{ativos.length}</span> aluno(s) ativo(s) em {turmaNome}
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="font-bold text-indigo-700 dark:text-indigo-300">{ativos.length}</span> aluno(s) ativo(s) em {turmaNome}
         </p>
         <button
           onClick={() => { setShowBusca(!showBusca); setErroBusca(''); setResultadosBusca([]); }}
@@ -156,8 +156,8 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
 
       {/* Painel de busca */}
       {showBusca && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-bold text-indigo-700 uppercase">Buscar Aluno para Matricular</p>
+        <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase">Buscar Aluno para Matricular</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -165,7 +165,7 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
                 type="text" placeholder="Digite o nome do aluno..."
                 value={termoBusca} onChange={e => setTermoBusca(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && buscarAlunos()}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <button
@@ -177,18 +177,18 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
           </div>
 
           {erroBusca && (
-            <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg p-2">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-300 text-xs bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg p-2">
               <AlertCircle size={14} /> {erroBusca}
             </div>
           )}
 
           {resultadosBusca.length > 0 && (
-            <ul className="divide-y divide-indigo-100 bg-white rounded-lg border border-indigo-200 overflow-hidden">
+            <ul className="divide-y divide-indigo-100 bg-white dark:bg-slate-800 rounded-lg border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
               {resultadosBusca.map(a => (
-                <li key={a.id} className="flex justify-between items-center px-3 py-2 hover:bg-indigo-50">
+                <li key={a.id} className="flex justify-between items-center px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-500/10">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{a.nome}</p>
-                    <p className="text-xs text-gray-500">{a.cpf || 'CPF não informado'}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.nome}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{a.cpf || 'CPF não informado'}</p>
                   </div>
                   <button
                     onClick={() => handleAdicionarAluno(a)}
@@ -203,7 +203,7 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
           )}
 
           {resultadosBusca.length === 0 && termoBusca.length >= 2 && !buscando && (
-            <p className="text-xs text-gray-500 text-center py-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
               Nenhum aluno encontrado. Verifique se o aluno está cadastrado no sistema com papel "Aluno".
             </p>
           )}
@@ -214,24 +214,24 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
       {loading ? (
         <div className="text-center py-6 text-gray-400 text-sm">Carregando...</div>
       ) : ativos.length === 0 ? (
-        <div className="text-center py-6 text-gray-500 text-sm bg-gray-50 rounded-xl border border-gray-200">
+        <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700">
           Nenhum aluno matriculado nesta turma ainda.
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100 bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <ul className="divide-y divide-gray-100 dark:divide-slate-700 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
           {ativos.map((a, i) => (
-            <li key={a.matricula_id} className="flex justify-between items-center px-4 py-2.5 hover:bg-gray-50">
+            <li key={a.matricula_id} className="flex justify-between items-center px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-900">
               <div className="flex items-center gap-3">
                 <span className="text-gray-400 text-xs w-5 text-right">{i + 1}</span>
-                <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
+                <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-xs">
                   {a.nome.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-gray-900">{a.nome}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.nome}</span>
               </div>
               <button
                 onClick={() => { setAlunoSaida(a); setMotivoSaida('Transferido'); }}
                 title="Registrar saída"
-                className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"
+                className="text-gray-400 hover:text-red-600 dark:hover:text-red-300 transition-colors p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-500/10"
               >
                 <UserX size={15} />
               </button>
@@ -242,19 +242,19 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
 
       {/* Alunos inativos (histórico) */}
       {inativos.length > 0 && (
-        <details className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-          <summary className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:bg-gray-100">
+        <details className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <summary className="px-4 py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700">
             Histórico de Saídas ({inativos.length})
           </summary>
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-gray-100 dark:divide-slate-700">
             {inativos.map(a => (
               <li key={a.matricula_id} className="flex items-center gap-3 px-4 py-2.5 opacity-60">
                 <UserCheck size={15} className="text-gray-400" />
-                <span className="text-sm text-gray-700">{a.nome}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">{a.nome}</span>
                 <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
-                  a.status === 'Transferido' ? 'bg-blue-100 text-blue-700' :
-                  a.status === 'Evadido'     ? 'bg-amber-100 text-amber-700' :
-                                               'bg-red-100 text-red-700'
+                  a.status === 'Transferido' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300' :
+                  a.status === 'Evadido'     ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' :
+                                               'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
                 }`}>{a.status}</span>
               </li>
             ))}
@@ -265,27 +265,27 @@ export const AlunosTurma: React.FC<Props> = ({ turmaId, turmaNome, escolaId, ano
       {/* Modal Registrar Saída */}
       {alunoSaida && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
-              <UserX size={18} className="text-red-500" /> Registrar Saída
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base flex items-center gap-2">
+              <UserX size={18} className="text-red-500 dark:text-red-300" /> Registrar Saída
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Registrar saída de <strong>{alunoSaida.nome}</strong> da turma <strong>{turmaNome}</strong>?
             </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Motivo</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase">Motivo</label>
               <select
                 value={motivoSaida} onChange={e => setMotivoSaida(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white appearance-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800 appearance-none focus:ring-2 focus:ring-indigo-500"
               >
                 {MOTIVOS_SAIDA.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg p-2">
               ⚠️ O registro histórico da matrícula é preservado conforme a LDBEN.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setAlunoSaida(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+              <button onClick={() => setAlunoSaida(null)} className="flex-1 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-900 text-sm font-medium">
                 Cancelar
               </button>
               <button onClick={handleConfirmarSaida} disabled={confirmandoSaida}

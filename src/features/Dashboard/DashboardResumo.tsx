@@ -119,19 +119,19 @@ export const DashboardResumo: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard de {papel}</h2>
-        <p className="text-sm text-gray-500">Unidade Escolar: {escolaAtiva?.escola.nome}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard de {papel}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Unidade Escolar: {escolaAtiva?.escola.nome}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.filter((card) => card.visible).map((card) => (
-          <div key={card.title} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4 hover-lift">
-            <div className="p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 rounded-xl shadow-inner border border-indigo-50">
+          <div key={card.title} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 flex items-start gap-4 hover-lift">
+            <div className="p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-xl shadow-inner border border-indigo-50">
               <card.icon size={24} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{card.title}</p>
-              <p className="text-3xl font-extrabold text-gray-900 mt-1">{card.value}</p>
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</p>
+              <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mt-1">{card.value}</p>
             </div>
           </div>
         ))}
@@ -139,11 +139,11 @@ export const DashboardResumo: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm min-h-[340px] hover-lift">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm min-h-[340px] hover-lift">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-800">{['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') ? 'Receitas x Despesas' : 'Atividade Financeira'}</h3>
-              <p className="text-sm text-gray-500">Últimos 6 meses de movimentação aprovada.</p>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') ? 'Receitas x Despesas' : 'Atividade Financeira'}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Últimos 6 meses de movimentação aprovada.</p>
             </div>
           </div>
           <div className="h-72">
@@ -158,20 +158,20 @@ export const DashboardResumo: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          {loading && <p className="text-sm text-gray-500 mt-4">Atualizando dados...</p>}
+          {loading && <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Atualizando dados...</p>}
         </div>
         )}
 
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover-lift">
-          <h3 className="text-lg font-bold text-gray-800 mb-6">Avisos de Gestão</h3>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm hover-lift">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-6">Avisos de Gestão</h3>
           <div className="space-y-4">
-            <div className="p-5 bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 shadow-sm">
-              <span className="text-xs font-bold text-indigo-600 mb-2 block uppercase tracking-widest">SISTEMA</span>
-              <p className="text-sm text-gray-700 font-medium">Verifique os próximos períodos letivos e atualize os prazos de encerramento de notas.</p>
+            <div className="p-5 bg-gradient-to-r from-indigo-50 to-white rounded-xl border border-indigo-100 dark:border-indigo-500/30 shadow-sm">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-300 mb-2 block uppercase tracking-widest">SISTEMA</span>
+              <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Verifique os próximos períodos letivos e atualize os prazos de encerramento de notas.</p>
             </div>
             {['Admin', 'Diretor', 'Subdiretor'].includes(papel || '') && (
-            <div className={`p-5 rounded-xl border shadow-sm ${saldoCaixa < 0 ? 'bg-gradient-to-r from-rose-50 to-white border-rose-100' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-100'}`}>
-              <p className={`text-sm font-medium ${saldoCaixa < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+            <div className={`p-5 rounded-xl border shadow-sm ${saldoCaixa < 0 ? 'bg-gradient-to-r from-rose-50 to-white border-rose-100 dark:border-rose-500/30' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-100 dark:border-emerald-500/30'}`}>
+              <p className={`text-sm font-medium ${saldoCaixa < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'}`}>
                 {saldoCaixa < 0 ? 'Saldo negativo detectado. Reveja despesas aprovadas.' : 'Fluxo de caixa saudável no período atual.'}
               </p>
             </div>

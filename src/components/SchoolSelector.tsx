@@ -28,8 +28,8 @@ export const SchoolSelector: React.FC = () => {
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)}
           ></div>
-          <div className="absolute top-12 left-0 w-64 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-            <div className="p-3 bg-gray-50 border-b text-xs font-semibold text-gray-500 uppercase">
+          <div className="absolute top-12 left-0 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-100 dark:border-slate-700 z-50 overflow-hidden">
+            <div className="p-3 bg-gray-50 dark:bg-slate-900 border-b text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
               Minhas Escolas
             </div>
             <div className="max-h-64 overflow-y-auto">
@@ -40,14 +40,14 @@ export const SchoolSelector: React.FC = () => {
                     setEscolaAtiva(membro);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex flex-col gap-1 transition-colors ${
-                    escolaAtiva?.escola_id === membro.escola_id ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'pl-5 border-l-4 border-transparent'
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-900 flex flex-col gap-1 transition-colors ${
+                    escolaAtiva?.escola_id === membro.escola_id ? 'bg-indigo-50 dark:bg-indigo-500/10 border-l-4 border-indigo-500' : 'pl-5 border-l-4 border-transparent'
                   }`}
                 >
-                  <span className="font-medium text-gray-900 text-sm">{membro.escola.nome}</span>
-                  <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{membro.escola.nome}</span>
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                     <span>{membro.papel}</span>
-                    <span className="px-1.5 py-0.5 bg-gray-200 rounded">{membro.tipo_vinculo}</span>
+                    <span className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-600 rounded">{membro.tipo_vinculo}</span>
                   </div>
                 </button>
               ))}

@@ -15,26 +15,26 @@ interface Props {
  */
 export const RootEscolaSelector: React.FC<Props> = ({ escolas, escolaRootId, setEscolaRootId, loading }) => {
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <div className="flex items-center gap-3 shrink-0">
-        <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+        <div className="w-9 h-9 bg-amber-100 dark:bg-amber-500/20 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-300">
           <Building2 size={20} />
         </div>
         <div>
-          <p className="text-sm font-bold text-amber-800">Acesso Root ativo</p>
-          <p className="text-xs text-amber-700">Selecione a escola que deseja gerenciar:</p>
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Acesso Root ativo</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300">Selecione a escola que deseja gerenciar:</p>
         </div>
       </div>
 
       <div className="relative flex-1 w-full sm:max-w-xs">
         {loading ? (
-          <div className="text-sm text-amber-700">Carregando escolas...</div>
+          <div className="text-sm text-amber-700 dark:text-amber-300">Carregando escolas...</div>
         ) : (
           <>
             <select
               value={escolaRootId || ''}
               onChange={e => setEscolaRootId(e.target.value)}
-              className="w-full appearance-none pl-3 pr-9 py-2 border border-amber-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+              className="w-full appearance-none pl-3 pr-9 py-2 border border-amber-300 dark:border-amber-500/30 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
             >
               <option value="">— Selecione uma escola —</option>
               {escolas.map(e => (
