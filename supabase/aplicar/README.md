@@ -82,7 +82,7 @@ Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas
 1. **Função de convite.** No seu computador, na pasta do projeto:
    ```bash
    npx supabase login
-   npx supabase secrets set SITE_URL=http://localhost:3000 --project-ref wbvsgmlbenuijulpkpzv
+   npx supabase secrets set SITE_URL=http://localhost:5173 --project-ref wbvsgmlbenuijulpkpzv
    npx supabase functions deploy create-school-user --project-ref wbvsgmlbenuijulpkpzv
    ```
 2. **Painel → Authentication → URL Configuration:** *Site URL* = o endereço do sistema; em *Redirect URLs* inclua `https://SEU-DOMINIO/reset-password` (senão o link do e-mail de primeiro acesso não redireciona certo).
