@@ -173,10 +173,15 @@ serve(async (req) => {
 
     // Envia o e-mail de primeiro acesso. (generateLink só GERA o link, não envia nada:
     // resetPasswordForEmail é quem dispara o e-mail para o usuário definir a senha.)
-    const siteUrl = Deno.env.get('SITE_URL');
+    // O endereço do link vem do site que fez o pedido (cabeçalho Origin, enviado pelo navegador), assim
+    // funciona igual em localhost e em produção. SITE_URL fica como alternativa. O Supabase ainda confere
+    // o endereço contra a lista "Redirect URLs"; se não estiver nela, usa a "Site URL" do painel.
+    const origem = req.headers.get('origin');
+    const origemValida = origem && /^https?:\/\/[^\s/]+$/.test(origem) ? origem : null;
+    const siteUrl = origemValida ?? Deno.env.get('SITE_URL');
     const { error: emailError } = await supabaseAdmin.auth.resetPasswordForEmail(
       email,
-      siteUrl ? { redirectTo: `${siteUrl}/reset-password` } : undefined,
+      siteUrl ? { redirectTo: `${siteUrl.replace(/\/$/, '')}/reset-password` } : undefined,
     );
     if (emailError) {
       // O usuário foi criado; só o e-mail falhou. A secretaria pode reenviar por "Esqueci minha senha".
