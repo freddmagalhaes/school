@@ -14,7 +14,7 @@ export const SchoolSelector: React.FC = () => {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-md transition-colors"
+        className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-white/10 dark:hover:bg-white/20 text-indigo-700 dark:text-white px-3 py-2 rounded-md transition-colors"
       >
         <BuildingIcon size={18} />
         <span className="text-sm font-medium">

@@ -62,6 +62,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const mesmoUsuario = !!session?.user && carregadoPara.current === session.user.id;
         if (mesmoUsuario) {
           setUser(prev => (prev?.id === session!.user.id ? prev : session!.user));
+          // Atualiza só a lista de escolas (ex.: o usuário ganhou vínculo em outra escola), sem tela de carregamento
+          if (_event === 'SIGNED_IN') fetchMembros(session!.user.id, true);
           return;
         }
         setUser(session?.user ?? null);
@@ -154,9 +156,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPerfil(prev => prev ? { ...prev, aceitou_termos_em: new Date().toISOString() } : null);
   };
 
-  const fetchMembros = async (userId: string) => {
+  const fetchMembros = async (userId: string, silencioso = false) => {
     try {
-      setLoading(true);
+      if (!silencioso) setLoading(true);
       
       const { data, error } = await supabase
         .from('membros_escola')
@@ -168,11 +170,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
       if (error) {
         console.error("Erro ao buscar vínculos no Supabase:", error);
-        setMembros([]);
+        if (!silencioso) setMembros([]); // numa atualização silenciosa, uma falha de rede não apaga a lista atual
         return;
       }
       
       const realMembros = (data as unknown) as MembroEscola[];
+      if (silencioso) {
+        // Só acrescenta/remove vínculos; a escola ativa continua a mesma (se ainda existir)
+        setMembros(realMembros);
+        setEscolaAtiva(atual => realMembros.find(m => m.id === atual?.id) ?? atual);
+        return;
+      }
       setMembros(realMembros);
       
       const savedEscolaId = localStorage.getItem('escola_ativa_id');
