@@ -15,13 +15,15 @@ export const TermosAceiteModal: React.FC = () => {
     setErro('');
 
     try {
-      // Tenta atualizar no banco (pode afetar 0 linhas se perfil não existir, mas não gera erro 403 de INSERT)
-      const { error } = await supabase
+      // .select() devolve as linhas alteradas: se for 0, nada foi gravado e o aviso voltaria no próximo login.
+      const { data, error } = await supabase
         .from('perfis')
         .update({ aceitou_termos_em: new Date().toISOString() })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('perfil não encontrado');
 
       // Destranca a UI localmente sem precisar fazer fetch de novo
       setTermosAceitos();

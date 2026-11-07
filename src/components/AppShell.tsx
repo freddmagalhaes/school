@@ -202,7 +202,8 @@ export const AppShell: React.FC = () => {
       </div>
 
       {/* Modal de LGPD */}
-      {perfil && !perfil.aceitou_termos_em && <TermosAceiteModal />}
+      {/* Root é equipe interna e não tem linha em perfis (CPF obrigatório): não há onde gravar o aceite */}
+      {perfil && !isSystemRoot && !perfil.aceitou_termos_em && <TermosAceiteModal />}
     </div>
   );
 };
