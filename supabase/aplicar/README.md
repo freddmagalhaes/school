@@ -87,6 +87,11 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **O que faz:** cria a tabela `periodos_aula` (1º, 2º, 3º horário de cada turno) para lançar a grade escolhendo "1º horário" em vez de digitar horas. Não altera nenhuma aula já lançada.
 **Conferir:** `verificar/11.sql` (rls_ativo = true, politicas = 3). **Desfazer:** `reverter/reverter_11_periodos.sql`.
 
+## Passo 12: níveis de suporte e auditoria  (`12_suporte_niveis_auditoria.sql`)
+**O que faz:** cria os níveis N1/N2/N3 do suporte (coluna `root_admins.nivel_suporte`) e as consultas controladas às escolas (`suporte_*`): cada uma confere o nível, exige o motivo nos níveis 2 e 3 e grava em `audit_logs`. Também torna a auditoria imutável pelo app.
+**Conferir:** `verificar/12.sql` (coluna_nivel = 1, funcoes_suporte = 7, politica_auditoria = 1, audit_imutavel = true). **Desfazer:** `reverter/reverter_12_suporte.sql`.
+**Depois:** em Backoffice → Equipe, defina o nível de cada operador de suporte (sem definir, vale N1).
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 

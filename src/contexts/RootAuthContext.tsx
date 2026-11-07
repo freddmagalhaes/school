@@ -21,6 +21,7 @@ export interface RootAdmin {
   role: RootRole;
   is_root: boolean;
   is_active: boolean;
+  nivel_suporte?: number | null;
   created_at: string;
 }
 
@@ -29,6 +30,8 @@ export const ROLE_PERMISSIONS: Record<string, RootRole[]> = {
   dashboard:     ['root', 'super_admin', 'suporte', 'financeiro', 'operacional'],
   clientes:      ['root', 'super_admin', 'suporte', 'operacional'],
   financeiro:    ['root', 'super_admin', 'financeiro'],
+  suporte:       ['root', 'super_admin', 'suporte'],
+  auditoria:     ['root'],
   equipe:        ['root'],
   configuracoes: ['root', 'super_admin'],
 };

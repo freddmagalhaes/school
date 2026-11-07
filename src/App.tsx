@@ -33,6 +33,8 @@ const ClientesRoot = lazy(() => import('./root/pages/ClientesRoot').then(m => ({
 const LeadsINEP = lazy(() => import('./ops/pages/LeadsINEP').then(m => ({ default: m.LeadsINEP })));
 const ClienteDetalhe = lazy(() => import('./root/pages/ClienteDetalhe').then(m => ({ default: m.ClienteDetalhe })));
 const FinanceiroRoot = lazy(() => import('./root/pages/FinanceiroRoot').then(m => ({ default: m.FinanceiroRoot })));
+const SuporteEscolas = lazy(() => import('./root/pages/SuporteEscolas').then(m => ({ default: m.SuporteEscolas })));
+const AuditoriaRoot = lazy(() => import('./root/pages/AuditoriaRoot').then(m => ({ default: m.AuditoriaRoot })));
 const EquipeRoot = lazy(() => import('./root/pages/EquipeRoot').then(m => ({ default: m.EquipeRoot })));
 const ConfiguracoesRoot = lazy(() => import('./root/pages/ConfiguracoesRoot').then(m => ({ default: m.ConfiguracoesRoot })));
 
@@ -112,6 +114,8 @@ export default function App() {
                   <Route path="leads"        element={<LeadsINEP />} />
                   <Route path="clientes/:id" element={<ClienteDetalhe />} />
                   <Route path="financeiro"   element={<FinanceiroRoot />} />
+                  <Route path="suporte"      element={<SuporteEscolas />} />
+                  <Route path="auditoria"    element={<AuditoriaRoot />} />
                   <Route path="equipe"       element={<EquipeRoot />} />
                   <Route path="configuracoes" element={<ConfiguracoesRoot />} />
                 </Route>

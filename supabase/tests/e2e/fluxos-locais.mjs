@@ -199,6 +199,50 @@ secao('Grade de horários (mesmas consultas da tela)');
   check('copiar o dia: o que conflita é recusado (23P01) e o resto entra', copia[0].error?.code === '23P01' && !copia[1].error, JSON.stringify(copia.map((r) => r.error?.message)));
 }
 
+secao('Suporte por níveis e auditoria (como a tela chama)');
+{
+  const op = async (k, nome, n, role, nivel, isRoot = false) => {
+    const id = await criarUsuario(nome, em(k), cpf(n));
+    await admin.from('root_admins').insert({ id, nome, email: em(k), role, nivel_suporte: nivel, is_root: isRoot, is_active: true });
+    return id;
+  };
+  const idN1 = await op('n1', 'Suporte N1', 970, 'suporte', 1);
+  await op('n3', 'Suporte N3', 971, 'suporte', 3);
+  const idDono = await op('dono', 'Dono', 972, 'root', null, true);
+  const n1 = await como(em('n1')), n3 = await como(em('n3')), dono = await como(em('dono'));
+  const MOT = 'Chamado 99: conferir notas';
+
+  let r = await n1.rpc('suporte_nivel');
+  check('N1: o sistema reconhece o nível 1', r.data === 1, JSON.stringify(r));
+  r = await n1.rpc('suporte_escolas');
+  check('N1 lista as escolas', (r.data ?? []).length >= 2, JSON.stringify(r.error));
+  r = await n1.rpc('suporte_escola_resumo', { p_escola: escA.id });
+  check('N1 vê o resumo da escola', r.data?.escola?.nome === escA.nome && typeof r.data?.turmas === 'number', JSON.stringify(r));
+  r = await n1.rpc('suporte_usuarios', { p_escola: escA.id, p_motivo: null });
+  check('N1 vê usuários sem CPF e com e-mail mascarado', r.data?.length > 3 && !/\d{3}\.\d{3}\.\d{3}/.test(JSON.stringify(r.data)) && r.data.every((u) => u.email.includes('***')), JSON.stringify(r.data?.[0]));
+  r = await n1.rpc('suporte_estrutura', { p_escola: escA.id, p_motivo: MOT });
+  check('N1 NÃO vê a estrutura (42501)', r.error?.code === '42501', JSON.stringify(r.error));
+  const aluno = (await admin.from('membros_escola').select('user_id').eq('escola_id', escA.id).eq('papel', 'Aluno').limit(1).single()).data.user_id;
+  r = await n3.rpc('suporte_aluno', { p_escola: escA.id, p_aluno: aluno, p_motivo: 'curto' });
+  check('N3 sem motivo suficiente é recusado (22023)', r.error?.code === '22023', JSON.stringify(r.error));
+  r = await n3.rpc('suporte_aluno', { p_escola: escA.id, p_aluno: aluno, p_motivo: MOT });
+  check('N3 vê notas, frequência e faturas do aluno', Array.isArray(r.data?.notas) && r.data?.frequencia && Array.isArray(r.data?.faturas), JSON.stringify(r.error));
+  r = await adminA.rpc('suporte_escola_resumo', { p_escola: escA.id });
+  check('Admin da escola não usa as funções de suporte', r.error?.code === '42501');
+  r = await n1.from('notas').select('id');
+  check('N1 não lê a tabela de notas diretamente', (r.data ?? []).length === 0);
+
+  const trilha = await dono.from('audit_logs').select('user_id, escola_id, acao, detalhes').like('acao', 'SUPORTE_%').order('created_at');
+  check('a auditoria registrou os acessos (operador, escola, nível e motivo)',
+    trilha.data?.some((x) => x.acao === 'SUPORTE_VER_ALUNO' && x.detalhes?.motivo === MOT && x.detalhes?.nivel === 3 && x.escola_id === escA.id)
+    && trilha.data?.some((x) => x.acao === 'SUPORTE_VER_RESUMO' && x.user_id === idN1), JSON.stringify(trilha.error ?? trilha.data?.length));
+  const visaoEscola = await adminA.from('audit_logs').select('acao').like('acao', 'SUPORTE_%').eq('escola_id', escA.id);
+  check('o Admin da escola vê quem do suporte acessou os dados dela', (visaoEscola.data ?? []).length > 0);
+  const apagar = await dono.from('audit_logs').delete().like('acao', 'SUPORTE_%').select('id');
+  check('ninguém, nem o dono, apaga a auditoria pelo app', !!apagar.error || (apagar.data ?? []).length === 0);
+  void idDono;
+}
+
 secao('Gestão de Turmas e Enturmação (Secretaria)');
 let q = await secA.from('turmas').insert({ escola_id: escA.id, nome: '5A', ano_letivo: 2026, turno: 'Manhã' }).select().single();
 check('cria turma', !q.error, q.error?.message);
