@@ -5,6 +5,7 @@ import {
   FileText, Calendar, CreditCard, AlertCircle, Save,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { formatarCPF, validarCPF } from '../../utils/validators';
 
 type Assinatura = {
   id: string;
@@ -21,6 +22,7 @@ type Assinatura = {
   observacoes?: string;
   created_at: string;
   updated_at: string;
+  escola_id?: string | null;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
@@ -38,6 +40,9 @@ export const ClienteDetalhe = () => {
   const [salvando, setSalvando] = useState(false);
   const [obs, setObs] = useState('');
   const [feedback, setFeedback] = useState<{ tipo: 'ok' | 'erro'; msg: string } | null>(null);
+  const [ehExemplo, setEhExemplo] = useState(false);
+  const [novaEscola, setNovaEscola] = useState({ cnpj: '', telefone: '', adminNome: '', adminEmail: '', adminCpf: '' });
+  const [criandoEscola, setCriandoEscola] = useState(false);
 
   useEffect(() => {
     const fetchCliente = async () => {
@@ -61,6 +66,7 @@ export const ClienteDetalhe = () => {
           created_at: '2026-04-20T10:00:00Z', updated_at: '2026-04-20T10:00:00Z',
         };
         setCliente(mock);
+        setEhExemplo(true);
         setObs(mock.observacoes || '');
       }
       setLoading(false);
@@ -82,6 +88,48 @@ export const ClienteDetalhe = () => {
     }
     setSalvando(false);
     setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const criarEscola = async () => {
+    if (!cliente) return;
+    const cnpj = novaEscola.cnpj.trim();
+    if (!cnpj || cnpj.length > 18) { setFeedback({ tipo: 'erro', msg: 'Informe o CNPJ da escola (até 18 caracteres).' }); return; }
+    if (!novaEscola.adminNome.trim() || !novaEscola.adminEmail.trim()) { setFeedback({ tipo: 'erro', msg: 'Informe nome e e-mail do administrador da escola.' }); return; }
+    if (!validarCPF(novaEscola.adminCpf)) { setFeedback({ tipo: 'erro', msg: 'CPF do administrador inválido.' }); return; }
+
+    setCriandoEscola(true);
+    setFeedback(null);
+    // 1) cria a escola
+    const { data: escola, error: errEscola } = await supabase
+      .from('escolas')
+      .insert({ nome: cliente.nome_escola, cnpj, telefone: novaEscola.telefone.trim() || null })
+      .select('id')
+      .single();
+    if (errEscola || !escola) {
+      setFeedback({ tipo: 'erro', msg: errEscola?.code === '23505' ? 'Já existe uma escola com este CNPJ.' : `Não foi possível criar a escola: ${errEscola?.message ?? 'erro desconhecido'}` });
+      setCriandoEscola(false);
+      return;
+    }
+    // 2) liga a escola à assinatura
+    const { error: errLink } = await supabase.from('assinaturas').update({ escola_id: escola.id }).eq('id', cliente.id);
+    if (errLink) {
+      setFeedback({ tipo: 'erro', msg: `Escola criada, mas não foi possível ligá-la à assinatura: ${errLink.message}. Crie o administrador em Usuários.` });
+      setCriandoEscola(false);
+      return;
+    }
+    setCliente({ ...cliente, escola_id: escola.id });
+    // 3) cria o primeiro Admin (a função envia o e-mail de primeiro acesso)
+    const { data, error: errAdmin } = await supabase.functions.invoke('create-school-user', {
+      body: { escola_id: escola.id, nome: novaEscola.adminNome.trim(), email: novaEscola.adminEmail.trim(), cpf: novaEscola.adminCpf, papel: 'Admin', tipo_vinculo: 'Efetivo' },
+    });
+    if (errAdmin || data?.error) {
+      setFeedback({ tipo: 'erro', msg: `Escola criada, mas o administrador não foi criado (${data?.error ?? errAdmin?.message}). Crie-o em Usuários, escolhendo esta escola.` });
+    } else if (data?.email_enviado === false) {
+      setFeedback({ tipo: 'ok', msg: `Escola e administrador criados, mas o e-mail não foi enviado. Peça para usar "Esqueci minha senha" com ${novaEscola.adminEmail}.` });
+    } else {
+      setFeedback({ tipo: 'ok', msg: `Escola criada! Um e-mail de primeiro acesso foi enviado para ${novaEscola.adminEmail}.` });
+    }
+    setCriandoEscola(false);
   };
 
   const salvarObs = async () => {
@@ -148,6 +196,47 @@ export const ClienteDetalhe = () => {
           {feedback.msg}
         </div>
       )}
+
+
+      {/* Escola do cliente */}
+      <div className="bg-white dark:bg-[#0e1425] border border-gray-100 dark:border-[#1e2d4a] rounded-2xl p-6 space-y-4 shadow-sm dark:shadow-none">
+        <h2 className="text-sm font-bold text-gray-400 dark:text-gray-300 uppercase tracking-wider">Escola no sistema</h2>
+        {cliente.escola_id ? (
+          <p className="text-sm text-emerald-500 flex items-center gap-2"><CheckCircle2 size={16} /> Escola criada e ligada a esta assinatura.</p>
+        ) : ehExemplo ? (
+          <p className="text-sm text-gray-500">Este é um cliente de exemplo (não há assinaturas reais cadastradas). A criação de escola fica disponível para clientes reais.</p>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Cria a escola <strong>{cliente.nome_escola}</strong> e o primeiro administrador, que recebe um e-mail para definir a senha.</p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                { k: 'cnpj', label: 'CNPJ da escola *', ph: '00.000.000/0000-00' },
+                { k: 'telefone', label: 'Telefone', ph: '(00) 00000-0000' },
+                { k: 'adminNome', label: 'Nome do administrador *', ph: cliente.nome },
+                { k: 'adminEmail', label: 'E-mail do administrador *', ph: cliente.email },
+                { k: 'adminCpf', label: 'CPF do administrador *', ph: '000.000.000-00' },
+              ].map(({ k, label, ph }) => (
+                <label key={k} className="text-xs text-gray-500 space-y-1">
+                  {label}
+                  <input
+                    value={(novaEscola as Record<string, string>)[k]}
+                    onChange={e => setNovaEscola(prev => ({ ...prev, [k]: k === 'adminCpf' ? formatarCPF(e.target.value) : e.target.value }))}
+                    placeholder={ph}
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-[#1e2d4a] rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-[#141c2e]"
+                  />
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={criarEscola}
+              disabled={criandoEscola}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-white text-sm font-bold rounded-xl"
+            >
+              {criandoEscola ? 'Criando...' : 'Criar escola e enviar acesso'}
+            </button>
+          </>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Dados do cliente */}

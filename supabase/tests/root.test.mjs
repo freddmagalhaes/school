@@ -32,4 +32,20 @@ describe('Root lê as escolas', () => {
     const r = await as(ID.adminA, (q) => q('SELECT id FROM public.escolas'));
     assert.deepEqual(r.rows.map((x) => x.id), [ID.escolaA]);
   });
+
+  test('root cria escola e liga à assinatura', async () => {
+    const a = await admin("INSERT INTO public.assinaturas (nome,email,nome_escola,plano,ciclo,metodo_pgto,valor_total) VALUES ('c','c@c','Nova','basico','mensal','pix',1) RETURNING id");
+    await as(ROOT, async (q) => {
+      const e = await q("INSERT INTO public.escolas (nome, cnpj) VALUES ('Nova', '99.999.999/0001-99') RETURNING id");
+      assert.ok(!e.error, e.error?.message);
+      const u = await q('UPDATE public.assinaturas SET escola_id = $1 WHERE id = $2', [e.rows[0].id, a.rows[0].id]);
+      assert.ok(!u.error && u.rowCount === 1, u.error?.message);
+    });
+  });
+  test('suporte e Admin de escola NÃO criam escola', async () => {
+    for (const uid of [ID.operador, ID.adminA]) {
+      const r = await as(uid, (q) => q("INSERT INTO public.escolas (nome, cnpj) VALUES ('X', '88.888.888/0001-88')"));
+      assert.ok(r.error, String(uid));
+    }
+  });
 });

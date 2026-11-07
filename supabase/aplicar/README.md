@@ -67,6 +67,14 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 
 ---
 
+## Passo 7: root enxerga as escolas  (`07_root_le_escolas.sql`)
+**O que faz:** o dono do sistema (`is_root = true`) passa a ler escolas, membros, perfis, turmas, disciplinas e matrículas, e a remover vínculos. Suporte comum não.
+**Conferir:** `verificar/07.sql` (7 políticas). **Desfazer:** `reverter/reverter_07_root.sql`.
+
+## Passo 8: root cria escola pelo backoffice  (`08_root_cria_escola.sql`)
+**O que faz:** libera `INSERT` em `escolas` só para o dono do sistema (botão "Criar escola e enviar acesso" no detalhe do cliente).
+**Conferir:** `verificar/08.sql` (1 linha). **Desfazer:** `reverter/reverter_08_root_cria_escola.sql`.
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 
