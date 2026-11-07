@@ -51,7 +51,7 @@ export const DashboardResumo: React.FC = () => {
       setChartData(gerarDadosGrafico(financeiro));
 
       if (papel === 'Professor' && user) {
-        const turmasProf = await supabase.from('turma_professores').select('id', { count: 'exact', head: true }).eq('professor_id', user.id);
+        const turmasProf = await supabase.from('turma_professores').select('id', { count: 'exact', head: true }).eq('professor_id', user.id).eq('escola_id', escolaAtiva!.escola_id);
         setTurmasVinculadas(turmasProf.count || 0);
       }
 

@@ -10,6 +10,7 @@ interface TurmaVinculo {
   disciplina_id: string;
   disciplina_nome: string;
   turma_nome: string;
+  turno: string;
 }
 
 interface Aluno {
@@ -61,7 +62,7 @@ export const DiarioClasse: React.FC = () => {
       .from('turma_professores')
       .select(`
         turma_id, disciplina_id,
-        turmas:turma_id (nome),
+        turmas:turma_id (nome, turno),
         disciplinas:disciplina_id (nome)
       `)
       .eq('escola_id', escolaId!);
@@ -78,6 +79,7 @@ export const DiarioClasse: React.FC = () => {
         disciplina_id: d.disciplina_id,
         disciplina_nome: d.disciplinas?.nome || '',
         turma_nome: d.turmas?.nome || '',
+        turno: d.turmas?.turno || '',
       }));
       setTurmas(formatado);
     }
@@ -237,7 +239,7 @@ export const DiarioClasse: React.FC = () => {
                 }`}
               >
                 <div className="truncate font-medium">{t.turma_nome}</div>
-                <div className="text-xs opacity-70 truncate mt-0.5">{t.disciplina_nome}</div>
+                <div className="text-xs opacity-70 truncate mt-0.5">{t.disciplina_nome}{t.turno ? ` · ${t.turno}` : ''}</div>
               </button>
             ))}
           </div>
@@ -256,7 +258,7 @@ export const DiarioClasse: React.FC = () => {
             <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 flex flex-wrap justify-between items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{turmaSelecionada.turma_nome}</h2>
-                <p className="text-sm text-indigo-600 dark:text-indigo-300 font-semibold">{turmaSelecionada.disciplina_nome}</p>
+                <p className="text-sm text-indigo-600 dark:text-indigo-300 font-semibold">{turmaSelecionada.disciplina_nome}{turmaSelecionada.turno ? ` · ${turmaSelecionada.turno}` : ''}</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
