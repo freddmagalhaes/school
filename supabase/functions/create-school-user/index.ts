@@ -110,33 +110,55 @@ serve(async (req) => {
       });
     }
 
-    // Cria o usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,   // E-mail confirmado automaticamente
-      user_metadata: { nome, cpf, ...metadata },
-      // Sem senha definida → Supabase enviará link de redefinição ao usuário
-    });
+    // A mesma pessoa pode atuar em várias escolas (ex.: professor na A, vice-diretor na B): o login e o perfil
+    // são UM só, e cada escola tem o seu vínculo (membros_escola). Se o CPF já existe, só acrescenta o vínculo,
+    // desde que o e-mail confira. Mensagem genérica de propósito: quem cadastra não descobre dados de outra escola.
+    const conflitoGenerico = () => new Response(JSON.stringify({
+      error: 'Não foi possível cadastrar com este e-mail e CPF. Confira os dados; se a pessoa já usa o sistema em outra escola, informe exatamente o mesmo e-mail e CPF dela.',
+    }), { status: 409, headers: corsHeaders });
 
-    if (authError || !authData.user) {
-      return new Response(JSON.stringify({ error: authError?.message || 'Erro ao criar usuário no Auth' }), {
-        status: 400, headers: corsHeaders
+    let newUserId: string;
+    let usuarioNovo = true;
+
+    const { data: perfilExistente } = await supabaseAdmin.from('perfis').select('id').eq('cpf', cpf).maybeSingle();
+    if (perfilExistente) {
+      const { data: existente } = await supabaseAdmin.auth.admin.getUserById(perfilExistente.id);
+      if (!existente?.user || (existente.user.email || '').toLowerCase() !== String(email).toLowerCase()) {
+        return conflitoGenerico();
+      }
+      newUserId = perfilExistente.id;
+      usuarioNovo = false;
+    } else {
+      // Cria o usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: true,   // E-mail confirmado automaticamente
+        user_metadata: { nome, cpf, ...metadata },
+        // Sem senha definida → Supabase enviará link de redefinição ao usuário
       });
-    }
 
-    const newUserId = authData.user.id;
+      if (authError || !authData.user) {
+        // E-mail já usado por outra pessoa (CPF diferente): mesma resposta genérica
+        if (/already|registered|exists/i.test(authError?.message || '')) return conflitoGenerico();
+        return new Response(JSON.stringify({ error: authError?.message || 'Erro ao criar usuário no Auth' }), {
+          status: 400, headers: corsHeaders
+        });
+      }
 
-    // Cria o perfil
-    const { error: perfilError } = await supabaseAdmin
-      .from('perfis')
-      .upsert({ id: newUserId, nome, cpf, metadata: metadata || {} }, { onConflict: 'id' });
+      newUserId = authData.user.id;
 
-    if (perfilError) {
-      // Rollback: deleta o usuário criado no Auth
-      await supabaseAdmin.auth.admin.deleteUser(newUserId);
-      return new Response(JSON.stringify({ error: 'Erro ao criar perfil: ' + perfilError.message }), {
-        status: 500, headers: corsHeaders
-      });
+      // Cria o perfil
+      const { error: perfilError } = await supabaseAdmin
+        .from('perfis')
+        .upsert({ id: newUserId, nome, cpf, metadata: metadata || {} }, { onConflict: 'id' });
+
+      if (perfilError) {
+        // Rollback: deleta o usuário criado no Auth
+        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+        return new Response(JSON.stringify({ error: 'Erro ao criar perfil: ' + perfilError.message }), {
+          status: 500, headers: corsHeaders
+        });
+      }
     }
 
     // Cria o vínculo na escola
@@ -150,7 +172,13 @@ serve(async (req) => {
       });
 
     if (vinculoError) {
-      await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      // Só apaga o login se ele acabou de ser criado aqui; uma pessoa que já existia nunca é apagada.
+      if (usuarioNovo) await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      if (!usuarioNovo && vinculoError.code === '23505') {
+        return new Response(JSON.stringify({ error: 'Esta pessoa já está cadastrada nesta escola com este papel.' }), {
+          status: 409, headers: corsHeaders
+        });
+      }
       return new Response(JSON.stringify({ error: 'Erro ao vincular à escola: ' + vinculoError.message }), {
         status: 500, headers: corsHeaders
       });
@@ -164,11 +192,19 @@ serve(async (req) => {
           escola_id, responsavel_id: newUserId, aluno_id, parentesco: parentesco || null,
         })));
       if (respError) {
-        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+        if (usuarioNovo) await supabaseAdmin.auth.admin.deleteUser(newUserId);
+        else await supabaseAdmin.from('membros_escola').delete().eq('escola_id', escola_id).eq('user_id', newUserId).eq('papel', papel);
         return new Response(JSON.stringify({ error: 'Erro ao vincular aos alunos: ' + respError.message }), {
           status: 500, headers: corsHeaders
         });
       }
+    }
+
+    // Pessoa que já tem login: só ganhou o vínculo nesta escola; não recebe e-mail de primeiro acesso.
+    if (!usuarioNovo) {
+      return new Response(JSON.stringify({ success: true, user_id: newUserId, vinculado_existente: true, email_enviado: null }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Envia o e-mail de primeiro acesso. (generateLink só GERA o link, não envia nada:

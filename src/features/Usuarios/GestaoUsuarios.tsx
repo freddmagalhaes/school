@@ -125,7 +125,9 @@ export const GestaoUsuarios: React.FC = () => {
       if (data?.error) throw new Error(data.error);
 
       setFeedbackTipo('ok');
-      setFeedback(data?.email_enviado === false
+      setFeedback(data?.vinculado_existente
+        ? `"${form.nome}" já tinha acesso ao sistema (outra escola): o vínculo com esta escola foi adicionado. Ele usa o mesmo e-mail e senha de sempre e escolhe a escola no topo da tela.`
+        : data?.email_enviado === false
         ? `Usuário "${form.nome}" criado, mas o e-mail de acesso não foi enviado. Peça para usar "Esqueci minha senha" com ${form.email}.`
         : `Usuário "${form.nome}" criado! Um e-mail de acesso foi enviado para ${form.email}.`);
       setShowModal(false);

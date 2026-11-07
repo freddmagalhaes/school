@@ -99,6 +99,34 @@ const alNovoId = r.data?.user_id;
 const adminBc = await como(em('adminB'));
 r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: escA.id, nome: 'Invasor', email: em('inv'), cpf: cpf(907), papel: 'Admin' } });
 check('Admin da escola B não cria usuário na escola A', !!r.error || r.data?.error);
+// Mesma pessoa em duas escolas (professor na A, diretor na B): um login, dois vínculos
+const profId = (await admin.from('perfis').select('id').eq('cpf', cpf(901)).single()).data?.id;
+const emailsAntes = (await emailsPara(novoProf)).length;
+r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: escB.id, nome: 'Prof Novo', email: novoProf, cpf: cpf(901), papel: 'Diretor' } });
+check('Admin da B vincula quem já existe na A (mesmo e-mail e CPF)', !r.error && r.data?.success === true && r.data?.vinculado_existente === true, JSON.stringify(r.error?.message ?? r.data));
+check('...reaproveita o MESMO login', r.data?.user_id === profId);
+const { data: vincs } = await admin.from('membros_escola').select('escola_id, papel').eq('user_id', profId);
+check('...e ele fica com 2 vínculos: Professor na A, Diretor na B',
+  vincs?.length === 2 && vincs.some((v) => v.escola_id === escA.id && v.papel === 'Professor') && vincs.some((v) => v.escola_id === escB.id && v.papel === 'Diretor'));
+await new Promise((r2) => setTimeout(r2, 1500));
+check('...sem novo e-mail de primeiro acesso', (await emailsPara(novoProf)).length === emailsAntes);
+const { data: perfilIntacto } = await admin.from('perfis').select('nome').eq('id', profId).single();
+check('...e o perfil original não foi alterado', perfilIntacto?.nome === 'Prof Novo');
+r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: escB.id, nome: 'Prof Novo', email: novoProf, cpf: cpf(901), papel: 'Diretor' } });
+check('mesmo vínculo duas vezes é recusado', !!r.error || r.data?.error);
+check('...e a pessoa continua existindo', !!(await admin.auth.admin.getUserById(profId)).data?.user);
+r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: escB.id, nome: 'Outro', email: em('outro'), cpf: cpf(901), papel: 'Professor' } });
+check('CPF existente com OUTRO e-mail é recusado', !!r.error || r.data?.error);
+r = await adminBc.functions.invoke('create-school-user', { body: { escola_id: escB.id, nome: 'Outro', email: novoProf, cpf: cpf(950), papel: 'Professor' } });
+check('e-mail existente com OUTRO CPF é recusado', !!r.error || r.data?.error);
+const { data: orfao2 } = await admin.from('perfis').select('id').eq('cpf', cpf(950));
+check('...e nada foi criado', (orfao2 ?? []).length === 0);
+// Como a pessoa enxerga as duas escolas com o mesmo login
+await admin.auth.admin.updateUserById(profId, { password: senha });
+const multi = await como(novoProf);
+const { data: meus } = await multi.from('membros_escola').select('escola_id, papel').eq('user_id', profId);
+check('logada, a pessoa vê os 2 vínculos (seletor de escola no topo)', meus?.length === 2);
+
 r = await adminA.functions.invoke('create-school-user', { body: { escola_id: escA.id, nome: 'X', email: em('x'), cpf: cpf(908), papel: 'SuperAdmin' } });
 check('papel inválido é recusado', !!r.error || r.data?.error);
 r = await adminA.functions.invoke('create-school-user', { body: { escola_id: escA.id, nome: 'Sem CPF', email: em('semcpf'), papel: 'Professor' } });
