@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEscolaAtual } from '../../hooks/useEscolaAtual';
+import { RootEscolaSelector } from '../../components/RootEscolaSelector';
 import { GraduationCap, Users, BookOpen, Library, CalendarClock } from 'lucide-react';
 import { GestaoTurmas } from './components/GestaoTurmas';
 import { DiarioClasse } from './components/DiarioClasse';
@@ -11,6 +13,7 @@ type Tab = 'gestao' | 'disciplinas' | 'horarios' | 'diario';
 export const AcademicoDashboard: React.FC = () => {
   const { escolaAtiva, isSystemRoot } = useAuth();
   const papel = escolaAtiva?.papel;
+  const { mostrarSeletorRoot, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
   
   const podeGerenciar = isSystemRoot || ['Admin', 'Diretor', 'Secretaria'].includes(papel || '');
   const [activeTab, setActiveTab] = useState<Tab>(podeGerenciar ? 'gestao' : 'diario');
@@ -36,6 +39,14 @@ export const AcademicoDashboard: React.FC = () => {
             : 'Bem-vindo ao seu diário de classe. Lance notas e frequências das suas turmas.'}
         </p>
       </div>
+
+      {/* O Root escolhe a escola UMA vez aqui; todas as abas abaixo usam a mesma, para não cadastrar na escola errada */}
+      {mostrarSeletorRoot && (
+        <div className="space-y-1">
+          <RootEscolaSelector escolas={escolas} escolaRootId={escolaRootId} setEscolaRootId={setEscolaRootId} loading={loadingEscolas} />
+          <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Todas as abas deste módulo usam a escola escolhida aqui.</p>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 p-1 rounded-xl border border-gray-200 dark:border-slate-700 inline-flex shadow-sm">
         {tabs.map(tab => (

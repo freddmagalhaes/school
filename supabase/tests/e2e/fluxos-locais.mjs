@@ -172,6 +172,31 @@ secao('Grade de horários (mesmas consultas da tela)');
   check('Aluno não enxerga a grade', (va.data ?? []).length === 0);
   const rh = await adminA.from('membros_escola').update({ carga_horaria_semanal: 20 }).eq('user_id', profG).eq('escola_id', escA.id).select('carga_horaria_semanal');
   check('Admin define a carga horária contratada (RH)', rh.data?.[0]?.carga_horaria_semanal === 20, JSON.stringify(rh));
+
+  // Tempos de aula: gerar (apaga e recria o turno) e ler
+  const gerados = [1, 2, 3].map((o) => ({ escola_id: escA.id, turno: 'Matutino', ordem: o, hora_inicio: `0${6 + o}:00`, hora_fim: `0${6 + o}:50` }));
+  await adminA.from('periodos_aula').delete().eq('escola_id', escA.id).eq('turno', 'Matutino');
+  const pi = await adminA.from('periodos_aula').insert(gerados);
+  check('Admin gera os tempos de aula do turno', !pi.error, pi.error?.message);
+  const pl = await prof.from('periodos_aula').select('turno, ordem, hora_inicio, hora_fim').eq('escola_id', escA.id);
+  check('Professor lê os tempos de aula da escola', pl.data?.length === 3, JSON.stringify(pl));
+  const pa = await alu.from('periodos_aula').select('id');
+  check('Aluno não enxerga os tempos de aula', (pa.data ?? []).length === 0);
+  const pp = await prof.from('periodos_aula').insert({ escola_id: escA.id, turno: 'Vespertino', ordem: 1, hora_inicio: '13:00', hora_fim: '13:50' });
+  check('Professor não define tempos de aula', !!pp.error);
+
+  // Visão por professor: opções de lançamento (turma + disciplina) com nomes
+  const op = await adminA.from('turma_professores').select('professor_id, disciplina_id, turma_id, turmas:turma_id (nome, turno), disciplinas:disciplina_id (nome)').eq('escola_id', escA.id).eq('professor_id', profG);
+  check('por professor: opções com turma, turno e disciplina', op.data?.length === 2 && op.data.every((x) => x.turmas?.nome && x.turmas?.turno && x.disciplinas?.nome), JSON.stringify(op));
+
+  // Lançar em vários dias (um insert por dia) e copiar um dia para outros, com conflito de permeio
+  const dia = (d, ini, fim) => nova(adminA, escA.id, tG.id, dG.id, d, ini, fim);
+  const multi = [];
+  for (const d of [2, 3]) multi.push(await dia(d, '07:00', '07:50'));
+  check('mesmo horário em vários dias (terça e quarta) entra', multi.every((r) => !r.error), JSON.stringify(multi.map((r) => r.error)));
+  const copia = [];
+  for (const d of [3, 4]) copia.push(await dia(d, '07:00', '07:50'));   // copiar a terça: a quarta já tem, a quinta não
+  check('copiar o dia: o que conflita é recusado (23P01) e o resto entra', copia[0].error?.code === '23P01' && !copia[1].error, JSON.stringify(copia.map((r) => r.error?.message)));
 }
 
 secao('Gestão de Turmas e Enturmação (Secretaria)');
@@ -207,8 +232,10 @@ const lista = q.data.map((m) => ({ mid: m.id, aluno: m.perfis.id }));
 const dia = '2026-05-10';
 const falhou = (res) => { if (res.error) throw new Error(res.error.message); };
 let salvou = true;
+const valorGravado = {};   // a ordem da lista não é garantida: o teste confere o valor gravado para cada matrícula
 try {
   const ids = lista.map((a) => a.mid);
+  lista.forEach((a, i) => { valorGravado[a.mid] = 7.5 + i; });
   falhou(await prof.from('frequencia').delete().in('matricula_id', ids).eq('data', dia));
   falhou(await prof.from('frequencia').insert(lista.map((a, i) => ({ escola_id: escA.id, matricula_id: a.mid, data: dia, presente: i === 0 }))));
   falhou(await prof.from('notas').delete().in('matricula_id', ids).eq('disciplina_id', disc.id).eq('data', dia));
@@ -257,7 +284,7 @@ const minhaMat = q.data?.[0]?.id;
 q = await al1.from('matrizes_curriculares').select('disciplina_id, disciplinas (nome)').eq('turma_id', turma.id);
 check('aluno vê as disciplinas da turma', !q.error && q.data.length === 1, q.error?.message);
 q = await al1.from('notas').select('disciplina_id, valor, data').eq('matricula_id', minhaMat);
-check('aluno vê a própria nota', !q.error && q.data.length === 1 && Number(q.data[0].valor) === 7.5, q.error?.message ?? JSON.stringify(q.data));
+check('aluno vê a própria nota', !q.error && q.data.length === 1 && Number(q.data[0].valor) === valorGravado[minhaMat], q.error?.message ?? JSON.stringify(q.data));
 q = await al1.from('frequencia').select('presente').eq('matricula_id', minhaMat);
 check('aluno vê a própria frequência', !q.error && q.data.length === 1, q.error?.message);
 q = await al1.from('faturas').select('id, mes_referencia, data_vencimento, valor, status').eq('aluno_id', M.al1).order('data_vencimento', { ascending: false });

@@ -83,6 +83,10 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **O que faz:** o dono do sistema grava turmas, disciplinas, professores da turma, enturmação e horários de qualquer escola (suporte). Não inclui notas, frequência nem financeiro.
 **Conferir:** `verificar/10.sql` (6 políticas `root_gerencia_*`). **Desfazer:** `reverter/reverter_10_root_estrutura.sql`.
 
+## Passo 11: tempos de aula  (`11_periodos_aula.sql`)
+**O que faz:** cria a tabela `periodos_aula` (1º, 2º, 3º horário de cada turno) para lançar a grade escolhendo "1º horário" em vez de digitar horas. Não altera nenhuma aula já lançada.
+**Conferir:** `verificar/11.sql` (rls_ativo = true, politicas = 3). **Desfazer:** `reverter/reverter_11_periodos.sql`.
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 

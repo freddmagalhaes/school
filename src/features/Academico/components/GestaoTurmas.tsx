@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useEscolaAtual } from '../../../hooks/useEscolaAtual';
-import { RootEscolaSelector } from '../../../components/RootEscolaSelector';
 import { Plus, Search, Edit2, Trash2, Users, GraduationCap } from 'lucide-react';
 import type { Disciplina } from './GestaoDisciplinas';
 import { AlunosTurma } from './AlunosTurma';
@@ -31,10 +30,6 @@ const TURNOS = ['Matutino', 'Vespertino', 'Noturno', 'Integral'];
 export const GestaoTurmas: React.FC = () => {
   const {
     escolaId,
-    precisaSelecionarEscola,
-    escolas,
-    escolaRootId,
-    setEscolaRootId,
     loadingEscolas,
   } = useEscolaAtual();
 
@@ -168,15 +163,6 @@ export const GestaoTurmas: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Seletor de escola para o Root sem vínculo */}
-      {(precisaSelecionarEscola || (!escolaId && escolas.length > 0)) && (
-        <RootEscolaSelector
-          escolas={escolas}
-          escolaRootId={escolaRootId}
-          setEscolaRootId={setEscolaRootId}
-          loading={loadingEscolas}
-        />
-      )}
 
       {erroTurma && (
         <div className="p-3 rounded-lg border text-sm bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30">{erroTurma}</div>

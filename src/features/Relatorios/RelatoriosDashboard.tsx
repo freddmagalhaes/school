@@ -9,7 +9,7 @@ import { AtaResultados } from './components/AtaResultados';
 type Tab = 'boletim' | 'frequencia' | 'ata';
 
 export const RelatoriosDashboard: React.FC = () => {
-  const { escolaId, precisaSelecionarEscola, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
+  const { escolaId, mostrarSeletorRoot, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
 
   const [activeTab, setActiveTab] = useState<Tab>('boletim');
 
@@ -31,7 +31,7 @@ export const RelatoriosDashboard: React.FC = () => {
       </div>
 
       {/* Seletor Root */}
-      {(precisaSelecionarEscola || (!escolaId && escolas.length > 0)) && (
+      {mostrarSeletorRoot && (
         <RootEscolaSelector escolas={escolas} escolaRootId={escolaRootId} setEscolaRootId={setEscolaRootId} loading={loadingEscolas} />
       )}
 

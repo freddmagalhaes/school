@@ -106,3 +106,33 @@ describe('Carga horária contratada', () => {
     assert.equal((await as(ID.profA, (q) => up(q, 40))).rowCount, 0);
   });
 });
+
+describe('Tempos de aula (periodos_aula)', () => {
+  const ins = (q, escola, turno, ordem) => q(
+    `INSERT INTO public.periodos_aula (escola_id, turno, ordem, hora_inicio, hora_fim) VALUES ($1,$2,$3,'07:00','07:50')`, [escola, turno, ordem]);
+  test('Admin e Secretaria definem; Professor, Aluno e Responsável não', async () => {
+    assert.ok(!(await as(ID.adminA, (q) => ins(q, ID.escolaA, 'Matutino', 1))).error);
+    assert.ok(!(await as(ID.secretariaA, (q) => ins(q, ID.escolaA, 'Matutino', 1))).error);
+    for (const u of [ID.profA, ID.aluno1A, ID.respA]) assert.ok((await as(u, (q) => ins(q, ID.escolaA, 'Matutino', 1))).error, String(u));
+  });
+  test('Admin da B não define tempos na escola A', async () => {
+    assert.ok((await as(ID.adminB, (q) => ins(q, ID.escolaA, 'Matutino', 1))).error);
+  });
+  test('o mesmo número de horário não se repete no turno; em outro turno pode', async () => {
+    await admin(`INSERT INTO public.periodos_aula (escola_id, turno, ordem, hora_inicio, hora_fim) VALUES ($1,'Matutino',1,'07:00','07:50')`, [ID.escolaA]);
+    await assert.rejects(admin(`INSERT INTO public.periodos_aula (escola_id, turno, ordem, hora_inicio, hora_fim) VALUES ($1,'Matutino',1,'08:00','08:50')`, [ID.escolaA]), (e) => e.code === '23505');
+    await admin(`INSERT INTO public.periodos_aula (escola_id, turno, ordem, hora_inicio, hora_fim) VALUES ($1,'Vespertino',1,'13:00','13:50')`, [ID.escolaA]);
+  });
+  test('término antes do início é recusado', async () => {
+    await assert.rejects(admin(`INSERT INTO public.periodos_aula (escola_id, turno, ordem, hora_inicio, hora_fim) VALUES ($1,'Noturno',1,'19:00','18:00')`, [ID.escolaA]), (e) => e.code === '23514');
+  });
+  test('Professor lê os tempos da própria escola; Aluno não; visitante não', async () => {
+    assert.ok((await as(ID.profA, (q) => q('SELECT 1 FROM public.periodos_aula'))).rowCount > 0);
+    assert.equal((await as(ID.aluno1A, (q) => q('SELECT 1 FROM public.periodos_aula'))).rowCount, 0);
+    assert.ok((await as(null, (q) => q('SELECT 1 FROM public.periodos_aula'))).error);
+  });
+  test('Admin da B não vê os tempos da A', async () => {
+    assert.equal((await as(ID.adminB, (q) => q('SELECT 1 FROM public.periodos_aula WHERE escola_id = $1', [ID.escolaA]))).rowCount, 0);
+  });
+});
+

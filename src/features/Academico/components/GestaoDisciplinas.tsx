@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useEscolaAtual } from '../../../hooks/useEscolaAtual';
-import { RootEscolaSelector } from '../../../components/RootEscolaSelector';
 import { Plus, Search, Edit2, Trash2, BookOpen } from 'lucide-react';
 
 export interface Disciplina {
@@ -12,10 +11,6 @@ export interface Disciplina {
 export const GestaoDisciplinas: React.FC = () => {
   const {
     escolaId,
-    precisaSelecionarEscola,
-    escolas,
-    escolaRootId,
-    setEscolaRootId,
     loadingEscolas,
   } = useEscolaAtual();
 
@@ -72,15 +67,6 @@ export const GestaoDisciplinas: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Seletor de escola para o Root sem vínculo */}
-      {precisaSelecionarEscola || (!escolaId && escolas.length > 0) ? (
-        <RootEscolaSelector
-          escolas={escolas}
-          escolaRootId={escolaRootId}
-          setEscolaRootId={setEscolaRootId}
-          loading={loadingEscolas}
-        />
-      ) : null}
 
       {erro && (
         <div className="p-3 rounded-lg border text-sm bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30">{erro}</div>

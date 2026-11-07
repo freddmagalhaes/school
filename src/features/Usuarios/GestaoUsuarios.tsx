@@ -46,7 +46,7 @@ const PAPEL_CONFIG: Record<string, { label: string; color: string }> = {
 
 export const GestaoUsuarios: React.FC = () => {
   const { escolaAtiva, isSystemRoot } = useAuth();
-  const { escolaId, precisaSelecionarEscola, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
+  const { escolaId, mostrarSeletorRoot, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
 
   const papel = escolaAtiva?.papel;
   // Admin cria qualquer papel; Secretaria só pode criar Professores e Alunos
@@ -261,7 +261,7 @@ export const GestaoUsuarios: React.FC = () => {
       </div>
 
       {/* Seletor Root */}
-      {(precisaSelecionarEscola || (!escolaId && escolas.length > 0)) && (
+      {mostrarSeletorRoot && (
         <RootEscolaSelector escolas={escolas} escolaRootId={escolaRootId} setEscolaRootId={setEscolaRootId} loading={loadingEscolas} />
       )}
 

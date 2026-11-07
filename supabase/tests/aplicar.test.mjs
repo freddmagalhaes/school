@@ -17,6 +17,7 @@ const pares = [
   ['08_root_cria_escola.sql', '20261106000700_root_cria_escola.sql'],
   ['09_horarios_e_carga.sql', '20261106000800_horarios_e_carga.sql'],
   ['10_root_gerencia_estrutura.sql', '20261106000900_root_gerencia_estrutura.sql'],
+  ['11_periodos_aula.sql', '20261106001000_periodos_aula.sql'],
 ];
 for (const [aplicar, migration] of pares) {
   test(`aplicar/${aplicar} é cópia de migrations/${migration}`, () => {

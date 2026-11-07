@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEscolaAtual } from '../../../hooks/useEscolaAtual';
-import { RootEscolaSelector } from '../../../components/RootEscolaSelector';
 import { Calendar, Save, CheckCircle2, XCircle, BookOpen } from 'lucide-react';
 
 interface TurmaVinculo {
@@ -24,10 +23,6 @@ export const DiarioClasse: React.FC = () => {
   const {
     escolaId,
     isSystemRoot,
-    precisaSelecionarEscola,
-    escolas,
-    escolaRootId,
-    setEscolaRootId,
     loadingEscolas,
   } = useEscolaAtual();
   const papel = useAuth().escolaAtiva?.papel;
@@ -199,14 +194,6 @@ export const DiarioClasse: React.FC = () => {
   if (!escolaId) {
     return (
       <div className="space-y-4">
-        {(precisaSelecionarEscola || (!escolaId && escolas.length > 0)) && (
-          <RootEscolaSelector
-            escolas={escolas}
-            escolaRootId={escolaRootId}
-            setEscolaRootId={setEscolaRootId}
-            loading={loadingEscolas}
-          />
-        )}
         {!loadingEscolas && (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
             Selecione uma escola acima para acessar o diário.
