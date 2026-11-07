@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
@@ -51,17 +51,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [escolaAtiva, setEscolaAtiva] = useState<MembroEscola | null>(null);
   const [isSystemRoot, setIsSystemRoot] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Usuário cujos dados já foram carregados: renovação de token e volta de foco da aba disparam eventos de
+  // auth com o MESMO usuário; recarregar nesses casos desmontava a tela inteira (formulários perdiam o estado).
+  const carregadoPara = useRef<string | null>(null);
 
   useEffect(() => {
     // Escutando mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        const mesmoUsuario = !!session?.user && carregadoPara.current === session.user.id;
+        if (mesmoUsuario) {
+          setUser(prev => (prev?.id === session!.user.id ? prev : session!.user));
+          return;
+        }
         setUser(session?.user ?? null);
         if (session?.user) {
+          carregadoPara.current = session.user.id;
           checkSystemRoot(session.user.id);
           fetchPerfil(session.user.id);
           fetchMembros(session.user.id);
         } else {
+          carregadoPara.current = null;
           setPerfil(null);
           setMembros([]);
           setEscolaAtiva(null);
@@ -73,8 +83,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && carregadoPara.current === session.user.id) return;
       setUser(session?.user ?? null);
       if (session?.user) {
+        carregadoPara.current = session.user.id;
         checkSystemRoot(session.user.id);
         fetchPerfil(session.user.id);
         fetchMembros(session.user.id);
