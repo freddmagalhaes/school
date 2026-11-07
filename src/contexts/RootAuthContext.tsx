@@ -31,6 +31,7 @@ export const ROLE_PERMISSIONS: Record<string, RootRole[]> = {
   clientes:      ['root', 'super_admin', 'suporte', 'operacional'],
   financeiro:    ['root', 'super_admin', 'financeiro'],
   suporte:       ['root', 'super_admin', 'suporte'],
+  atendimento:   ['root', 'super_admin', 'suporte'],
   auditoria:     ['root'],
   equipe:        ['root'],
   configuracoes: ['root', 'super_admin'],
@@ -72,12 +73,15 @@ export const RootAuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Escuta mudanças de sessão do Supabase Auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           // Se já carregamos uma vez, não mostra o loading de tela cheia novamente
           const isSilent = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || hasLoadedRef.current;
-          await fetchOperador(session.user.id, isSilent);
+          // Consulta ao banco FORA do callback: dentro dele a biblioteca do Supabase fica esperando a si mesma e a
+          // página trava em "Verificando credenciais..." ao recarregar.
+          const uid = session.user.id;
+          setTimeout(() => { fetchOperador(uid, isSilent); }, 0);
         } else {
           setOperador(null);
           setLoading(false);

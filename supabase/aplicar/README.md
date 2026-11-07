@@ -92,6 +92,10 @@ Se algum número for diferente, **pare**: o banco mudou desde o dump de 2026-11-
 **Conferir:** `verificar/12.sql` (coluna_nivel = 1, funcoes_suporte = 7, politica_auditoria = 1, audit_imutavel = true). **Desfazer:** `reverter/reverter_12_suporte.sql`.
 **Depois:** em Backoffice → Equipe, defina o nível de cada operador de suporte (sem definir, vale N1).
 
+## Passo 13: canal de atendimento (chat com o suporte)  (`13_atendimento_chat.sql`)
+**O que faz:** cria as tabelas `atendimentos` e `atendimento_mensagens`. O cliente (Admin, Diretor, Subdiretor, Secretaria e Professor) abre uma conversa pelo botão **Ajuda** dentro do sistema; o suporte (N1, N2, N3 e dono) responde pela caixa de entrada **Backoffice → Atendimento** e pode escalar de N1 para N2 ou N3. Quem é o autor ("cliente" ou "suporte") e o nome vêm do servidor.
+**Conferir:** `verificar/13.sql` (tabelas = 2, politicas = 6, gatilhos = 5, rls_ativo = true). **Desfazer:** `reverter/reverter_13_atendimento.sql` (apaga TODAS as conversas).
+
 ## Conferência final dos 6 passos
 Cole `verificar/99_final.sql`: devolve uma tabela com a coluna `status`; **todas as 10 linhas devem dizer OK**. (Testado: num banco com o esquema real, antes dos passos quase tudo diz DIFERENTE e depois dos seis tudo diz OK.)
 

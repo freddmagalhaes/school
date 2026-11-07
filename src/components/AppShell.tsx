@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { TermosAceiteModal } from './LGPD/TermosAceiteModal';
 import { ThemeToggle } from './ThemeToggle';
+import { AtendimentoWidget } from './AtendimentoWidget';
 
 export const AppShell: React.FC = () => {
   const { escolaAtiva, isSystemRoot, user, perfil, signOut, membros, loading } = useAuth();
@@ -202,6 +203,9 @@ export const AppShell: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Chat com o suporte (só para a equipe da escola) */}
+      <AtendimentoWidget />
 
       {/* Modal de LGPD */}
       {/* Root é equipe interna e não tem linha em perfis (CPF obrigatório): não há onde gravar o aceite */}

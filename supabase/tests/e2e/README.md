@@ -6,6 +6,7 @@ Dois roteiros que usam Auth, PostgREST, Edge Function e e-mail de teste **reais*
 |---|---|
 | `fluxos-locais.mjs` (57 verificações) | as mesmas consultas das telas (Diário, Gestão de Turmas, Enturmação, Financeiro, Portal do Aluno e da Família), a Edge Function `create-school-user` (inclusive o e-mail de primeiro acesso) e o RLS com tokens verdadeiros |
 | `horarios-ui.mjs` (10 verificações) | no navegador: tempos de aula, aula em vários dias, montagem pela visão do professor, cópia de dia, conflito e a escolha única de escola do Root |
+| `atendimento-ui.mjs` (7 verificações) | no navegador: o professor abre o chat "Ajuda", o suporte N1 responde pelo backoffice, escala para o N2, resolve e o professor reabre |
 | `ui.mjs` (18 verificações) | o app aberto num navegador: Termos de Uso, Diário (salvar e reabrir), Portal do Aluno, Portal da Família |
 
 ## Como rodar
@@ -24,6 +25,7 @@ SB_DIR=/tmp/sb node supabase/tests/e2e/fluxos-locais.mjs
 VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=<ANON_KEY do `supabase status`> npx vite --port 5199 &
 SB_DIR=/tmp/sb PW_CORE=<caminho>/playwright-core/index.mjs CHROME=<chromium> SHOTS=/tmp node supabase/tests/e2e/ui.mjs
 SB_DIR=/tmp/sb PW_CORE=<caminho>/playwright-core/index.mjs CHROME=<chromium> SHOTS=/tmp node supabase/tests/e2e/horarios-ui.mjs
+SB_DIR=/tmp/sb PW_CORE=<caminho>/playwright-core/index.mjs CHROME=<chromium> SHOTS=/tmp node supabase/tests/e2e/atendimento-ui.mjs
 ```
 Usuários criados pela função não têm senha (entram pelo link do e-mail); o roteiro define uma por fora só para testar o portal.
 Cada execução cria dados novos (CPFs únicos): pode rodar várias vezes.

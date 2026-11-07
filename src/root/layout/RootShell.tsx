@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, DollarSign, Shield, Settings,
   LogOut, ChevronLeft, ChevronRight, GraduationCap, Wrench,
-  Sun, Moon, Target, LifeBuoy, ClipboardList
+  Sun, Moon, Target, LifeBuoy, ClipboardList, MessagesSquare
 } from 'lucide-react';
 import { useRootAuth, ROLE_CONFIG, ROLE_PERMISSIONS } from '../../contexts/RootAuthContext';
 import type { RootRole } from '../../contexts/RootAuthContext';
@@ -31,6 +31,12 @@ const NAV_ITEMS = [
     label: 'Leads INEP',
     icon: Target,
     roles: ROLE_PERMISSIONS.clientes,
+  },
+  {
+    path: 'atendimento',
+    label: 'Atendimento',
+    icon: MessagesSquare,
+    roles: ROLE_PERMISSIONS.atendimento,
   },
   {
     path: 'suporte',
