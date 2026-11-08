@@ -17,6 +17,7 @@ type NovoOperador = {
   email: string;
   senha: string;
   role: RootRole;
+  nivel: number;   // nível do suporte (1 a 3); só vale quando role = suporte
 };
 
 const ROLES_DISPONIVEIS: RootRole[] = ['super_admin', 'suporte', 'financeiro', 'operacional'];
@@ -31,7 +32,7 @@ export const EquipeRoot = () => {
   const [feedback, setFeedback] = useState<{ tipo: 'ok' | 'erro'; msg: string } | null>(null);
   const [confirmarExclusao, setConfirmarExclusao] = useState<string | null>(null);
   const [novoOp, setNovoOp] = useState<NovoOperador>({
-    nome: '', email: '', senha: '', role: 'suporte',
+    nome: '', email: '', senha: '', role: 'suporte', nivel: 1,
   });
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export const EquipeRoot = () => {
           .update({
             nome: novoOp.nome,
             role: novoOp.role,
+            nivel_suporte: novoOp.role === 'suporte' ? novoOp.nivel : null,
           })
           .eq('id', operadorEmEdicao.id);
 
@@ -104,6 +106,7 @@ export const EquipeRoot = () => {
             nome: novoOp.nome,
             email: novoOp.email,
             role: novoOp.role,
+            nivel_suporte: novoOp.role === 'suporte' ? novoOp.nivel : null,
             is_root: false,
             is_active: true,
             created_by: operadorLogado?.id,
@@ -118,7 +121,7 @@ export const EquipeRoot = () => {
       }
 
       setModalAberto(false);
-      setNovoOp({ nome: '', email: '', senha: '', role: 'suporte' });
+      setNovoOp({ nome: '', email: '', senha: '', role: 'suporte', nivel: 1 });
       setOperadorEmEdicao(null);
       fetchEquipe();
     } catch (err: any) {
@@ -135,13 +138,14 @@ export const EquipeRoot = () => {
       email: op.email,
       senha: '', // senha não é editada por aqui por segurança
       role: op.role,
+      nivel: op.nivel_suporte ?? 1,
     });
     setModalAberto(true);
   };
 
   const abrirCriacao = () => {
     setOperadorEmEdicao(null);
-    setNovoOp({ nome: '', email: '', senha: '', role: 'suporte' });
+    setNovoOp({ nome: '', email: '', senha: '', role: 'suporte', nivel: 1 });
     setModalAberto(true);
   };
 
@@ -284,6 +288,9 @@ export const EquipeRoot = () => {
                         </select>
                       </RootRoleGuard>
                     )}
+                    {!op.is_root && op.role === 'suporte' && (
+                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/30">N{op.nivel_suporte ?? 1}</span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
@@ -416,11 +423,31 @@ export const EquipeRoot = () => {
                 </select>
                 <p className="text-[10px] text-gray-600 mt-1.5">
                   {novoOp.role === 'super_admin' && 'Acesso total, exceto gerenciar outros operadores.'}
-                  {novoOp.role === 'suporte' && 'Vê e gerencia clientes. Sem acesso ao financeiro.'}
+                  {novoOp.role === 'suporte' && 'Atende clientes pelos chamados e consulta dados das escolas conforme o nível abaixo. Sem acesso ao financeiro.'}
                   {novoOp.role === 'financeiro' && 'Dashboard e módulo financeiro. Sem acesso a clientes.'}
                   {novoOp.role === 'operacional' && 'Provisionamento e parametrização de clientes.'}
                 </p>
               </div>
+
+              {novoOp.role === 'suporte' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Nível do suporte*</label>
+                  <select
+                    value={novoOp.nivel}
+                    onChange={(e) => setNovoOp({ ...novoOp, nivel: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-[#141c2e] border border-gray-200 dark:border-[#1e2d4a] rounded-xl text-sm text-gray-800 dark:text-gray-300 focus:outline-none focus:border-amber-400/40 transition-all appearance-none"
+                  >
+                    <option value={1}>N1 — atendimento</option>
+                    <option value={2}>N2 — analista</option>
+                    <option value={3}>N3 — especialista</option>
+                  </select>
+                  <p className="text-[10px] text-gray-600 mt-1.5">
+                    {novoOp.nivel === 1 && 'Vê escolas, resumo e usuários (sem CPF, e-mail mascarado). Atende o chat dos clientes.'}
+                    {novoOp.nivel === 2 && 'N1 + turmas, professores, disciplinas e grade, e e-mail completo. Exige motivo e fica registrado.'}
+                    {novoOp.nivel === 3 && 'N2 + notas, frequência e faturas de um aluno. Exige motivo e fica registrado.'}
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button

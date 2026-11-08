@@ -27,9 +27,11 @@ interface FormUsuario {
   cpf: string;
   papel: PerfilPapel;
   tipo_vinculo: VinculoTipo;
+  aluno_ids: string[];
+  parentesco: string;
 }
 
-const PAPEIS_DISPONIVEIS: PerfilPapel[] = ['Diretor', 'Subdiretor', 'Secretaria', 'Professor', 'Aluno'];
+const PAPEIS_DISPONIVEIS: PerfilPapel[] = ['Diretor', 'Subdiretor', 'Secretaria', 'Professor', 'Aluno', 'Responsavel'];
 const PAPEIS_SO_ADMIN: PerfilPapel[] = ['Diretor', 'Subdiretor', 'Secretaria'];
 
 const PAPEL_CONFIG: Record<string, { label: string; color: string }> = {
@@ -39,11 +41,12 @@ const PAPEL_CONFIG: Record<string, { label: string; color: string }> = {
   Secretaria: { label: 'Secretaria',     color: 'bg-indigo-100 text-indigo-800' },
   Professor:  { label: 'Professor',      color: 'bg-emerald-100 text-emerald-800' },
   Aluno:      { label: 'Aluno',          color: 'bg-amber-100 text-amber-800' },
+  Responsavel: { label: 'Responsável',   color: 'bg-rose-100 text-rose-800' },
 };
 
 export const GestaoUsuarios: React.FC = () => {
   const { escolaAtiva, isSystemRoot } = useAuth();
-  const { escolaId, precisaSelecionarEscola, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
+  const { escolaId, mostrarSeletorRoot, escolas, escolaRootId, setEscolaRootId, loadingEscolas } = useEscolaAtual();
 
   const papel = escolaAtiva?.papel;
   // Admin cria qualquer papel; Secretaria só pode criar Professores e Alunos
@@ -61,7 +64,7 @@ export const GestaoUsuarios: React.FC = () => {
   const [feedback, setFeedback] = useState('');
   const [feedbackTipo, setFeedbackTipo] = useState<'ok' | 'erro'>('ok');
   const [form, setForm] = useState<FormUsuario>({
-    nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo',
+    nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo', aluno_ids: [], parentesco: '',
   });
 
   const carregarMembros = useCallback(async () => {
@@ -97,6 +100,13 @@ export const GestaoUsuarios: React.FC = () => {
       return;
     }
 
+    if (form.papel === 'Responsavel' && form.aluno_ids.length === 0) {
+      setFeedbackTipo('erro');
+      setFeedback('Escolha ao menos um aluno para este responsável.');
+      setSalvando(false);
+      return;
+    }
+
     try {
       // Chama a Edge Function que usa service_role internamente
       const { data, error } = await supabase.functions.invoke('create-school-user', {
@@ -107,6 +117,7 @@ export const GestaoUsuarios: React.FC = () => {
           cpf: form.cpf,
           papel: form.papel,
           tipo_vinculo: form.tipo_vinculo,
+          ...(form.papel === 'Responsavel' ? { aluno_ids: form.aluno_ids, parentesco: form.parentesco || null } : {}),
         },
       });
 
@@ -114,10 +125,14 @@ export const GestaoUsuarios: React.FC = () => {
       if (data?.error) throw new Error(data.error);
 
       setFeedbackTipo('ok');
-      setFeedback(`Usuário "${form.nome}" criado! Um e-mail de acesso foi enviado para ${form.email}.`);
+      setFeedback(data?.vinculado_existente
+        ? `"${form.nome}" já tinha acesso ao sistema (outra escola): o vínculo com esta escola foi adicionado. Ele usa o mesmo e-mail e senha de sempre e escolhe a escola no topo da tela.`
+        : data?.email_enviado === false
+        ? `Usuário "${form.nome}" criado, mas o e-mail de acesso não foi enviado. Peça para usar "Esqueci minha senha" com ${form.email}.`
+        : `Usuário "${form.nome}" criado! Um e-mail de acesso foi enviado para ${form.email}.`);
       setShowModal(false);
       setEditingMembro(null);
-      setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+      setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo', aluno_ids: [], parentesco: '' });
       carregarMembros();
     } catch (err: any) {
       setFeedbackTipo('erro');
@@ -129,7 +144,7 @@ export const GestaoUsuarios: React.FC = () => {
 
   const abrirModalCriarUsuario = () => {
     setEditingMembro(null);
-    setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+    setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo', aluno_ids: [], parentesco: '' });
     setFeedback('');
     setShowModal(true);
   };
@@ -142,6 +157,8 @@ export const GestaoUsuarios: React.FC = () => {
       cpf: membro.perfis?.cpf || '',
       papel: membro.papel,
       tipo_vinculo: membro.tipo_vinculo,
+      aluno_ids: [],
+      parentesco: '',
     });
     setFeedback('');
     setShowModal(true);
@@ -178,7 +195,7 @@ export const GestaoUsuarios: React.FC = () => {
 
       setShowModal(false);
       setEditingMembro(null);
-      setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo' });
+      setForm({ nome: '', email: '', cpf: '', papel: 'Professor', tipo_vinculo: 'Efetivo', aluno_ids: [], parentesco: '' });
       carregarMembros();
     } catch (err: any) {
       setFeedbackTipo('erro');
@@ -244,7 +261,7 @@ export const GestaoUsuarios: React.FC = () => {
       </div>
 
       {/* Seletor Root */}
-      {(precisaSelecionarEscola || (!escolaId && escolas.length > 0)) && (
+      {mostrarSeletorRoot && (
         <RootEscolaSelector escolas={escolas} escolaRootId={escolaRootId} setEscolaRootId={setEscolaRootId} loading={loadingEscolas} />
       )}
 
@@ -394,8 +411,8 @@ export const GestaoUsuarios: React.FC = () => {
                     placeholder={editingMembro ? 'E-mail não disponível para edição' : 'email@escola.com'} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF</label>
-                  <input type="text" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })}
+                  <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">CPF *</label>
+                  <input type="text" required value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })}
                     className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
                     placeholder="000.000.000-00" maxLength={14} />
                 </div>
@@ -417,6 +434,31 @@ export const GestaoUsuarios: React.FC = () => {
                   </select>
                 </div>
               </div>
+              {form.papel === 'Responsavel' && !editingMembro && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Parentesco</label>
+                    <input type="text" value={form.parentesco} onChange={e => setForm({ ...form, parentesco: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Mãe, pai, avó, tutor legal..." maxLength={40} />
+                  </div>
+                  <fieldset>
+                    <legend className="block text-xs font-semibold text-gray-600 mb-1 uppercase">Alunos que acompanha *</legend>
+                    <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg divide-y divide-gray-100">
+                      {membros.filter(m => m.papel === 'Aluno' && m.perfis).length === 0 && (
+                        <p className="p-3 text-sm text-gray-500">Nenhum aluno cadastrado nesta escola ainda.</p>
+                      )}
+                      {membros.filter(m => m.papel === 'Aluno' && m.perfis).map(m => (
+                        <label key={m.id} className="flex items-center gap-2 p-2 text-sm text-gray-800 cursor-pointer hover:bg-gray-50">
+                          <input type="checkbox" checked={form.aluno_ids.includes(m.perfis!.id)}
+                            onChange={e => setForm({ ...form, aluno_ids: e.target.checked ? [...form.aluno_ids, m.perfis!.id] : form.aluno_ids.filter(id => id !== m.perfis!.id) })} />
+                          {m.perfis!.nome}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              )}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700 flex items-start gap-2">
                 <Mail size={14} className="shrink-0 mt-0.5" />
                 <span>O usuário receberá um e-mail com o link de primeiro acesso para definir sua senha.</span>

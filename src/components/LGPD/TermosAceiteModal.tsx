@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ShieldCheck, FileText, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const TermosAceiteModal: React.FC = () => {
@@ -15,13 +15,15 @@ export const TermosAceiteModal: React.FC = () => {
     setErro('');
 
     try {
-      // Tenta atualizar no banco (pode afetar 0 linhas se perfil não existir, mas não gera erro 403 de INSERT)
-      const { error } = await supabase
+      // .select() devolve as linhas alteradas: se for 0, nada foi gravado e o aviso voltaria no próximo login.
+      const { data, error } = await supabase
         .from('perfis')
         .update({ aceitou_termos_em: new Date().toISOString() })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('perfil não encontrado');
 
       // Destranca a UI localmente sem precisar fazer fetch de novo
       setTermosAceitos();
@@ -58,7 +60,7 @@ export const TermosAceiteModal: React.FC = () => {
           </div>
 
           {erro && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 rounded-lg text-sm border border-red-200 dark:border-red-500/30">
               {erro}
             </div>
           )}
@@ -68,7 +70,7 @@ export const TermosAceiteModal: React.FC = () => {
               type="checkbox" 
               checked={aceito}
               onChange={(e) => setAceito(e.target.checked)}
-              className="mt-1 w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer"
+              className="mt-1 w-5 h-5 text-indigo-600 dark:text-indigo-300 rounded border-gray-300 dark:border-slate-600 focus:ring-indigo-500 cursor-pointer"
             />
             <div className="text-sm">
               <span className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">Eu li e concordo com os Termos de Uso e Política de Privacidade.</span>

@@ -18,7 +18,7 @@ export const RootLogin = () => {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const { operador, user: rootUser } = useRootAuth();
+  const { operador } = useRootAuth();
 
   // Se já estiver logado e autorizado, redireciona
   React.useEffect(() => {

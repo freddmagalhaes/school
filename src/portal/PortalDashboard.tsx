@@ -22,7 +22,12 @@ interface Fatura {
 }
 
 export const PortalDashboard: React.FC = () => {
-  const { escolaAtiva, perfil } = useAuth();
+  const { escolaAtiva, perfil, user } = useAuth();
+  const ehResponsavel = escolaAtiva?.papel === 'Responsavel';
+  // Aluno vê a si mesmo; Responsável escolhe entre os alunos que acompanha (membros_escola.id de cada aluno)
+  const [filhos, setFilhos] = useState<{ perfilId: string; membroId: string; nome: string }[]>([]);
+  const [alunoSel, setAlunoSel] = useState<string | null>(null);
+  const [semVinculo, setSemVinculo] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [turmaNome, setTurmaNome] = useState<string>('Turma não alocada');
@@ -31,23 +36,58 @@ export const PortalDashboard: React.FC = () => {
   const [boletos, setBoletos] = useState<Fatura[]>([]);
 
   useEffect(() => {
-    if (escolaAtiva) {
-      carregarDadosPortal();
-    }
-  }, [escolaAtiva]);
-
-  const carregarDadosPortal = async () => {
     if (!escolaAtiva) return;
+    if (!ehResponsavel) {
+      setAlunoSel(user?.id ?? null);
+      return;
+    }
+    const carregarFilhos = async () => {
+      const { data: vinculos } = await supabase
+        .from('responsaveis_alunos')
+        .select('aluno_id, perfis:aluno_id (nome)')
+        .eq('responsavel_id', user?.id ?? '')
+        .eq('escola_id', escolaAtiva.escola_id);
+      const ids = (vinculos || []).map((v: any) => v.aluno_id);
+      if (ids.length === 0) {
+        setSemVinculo(true);
+        setLoading(false);
+        return;
+      }
+      const { data: membros } = await supabase
+        .from('membros_escola')
+        .select('id, user_id')
+        .eq('escola_id', escolaAtiva.escola_id)
+        .eq('papel', 'Aluno')
+        .in('user_id', ids);
+      const lista = (vinculos || [])
+        .map((v: any) => ({ perfilId: v.aluno_id as string, membroId: membros?.find((m: any) => m.user_id === v.aluno_id)?.id as string, nome: (v.perfis?.nome as string) || 'Aluno' }))
+        .filter((f) => f.membroId);
+      setFilhos(lista);
+      setSemVinculo(lista.length === 0);
+      setAlunoSel(lista[0]?.perfilId ?? null);
+      if (lista.length === 0) setLoading(false);
+    };
+    carregarFilhos();
+  }, [escolaAtiva, ehResponsavel, user]);
+
+  useEffect(() => {
+    if (escolaAtiva && alunoSel) carregarDadosPortal(alunoSel);
+  }, [escolaAtiva, alunoSel]);
+
+  const carregarDadosPortal = async (alunoPerfilId: string) => {
+    if (!escolaAtiva) return;
+    // faturas apontam para o vínculo do aluno (membros_escola.id); a matrícula aponta para o perfil
+    const alunoMembroId = ehResponsavel ? filhos.find((f) => f.perfilId === alunoPerfilId)?.membroId : escolaAtiva.id;
     setLoading(true);
 
     try {
       // 1. Pega a matrícula do aluno
       const { data: matriculas } = await supabase
-        .from('turma_alunos')
+        .from('matriculas')
         .select('id, turmas (id, nome)')
-        .eq('aluno_id', escolaAtiva.id)
+        .eq('aluno_id', alunoPerfilId)
         .eq('status', 'Ativo')
-        .order('data_matricula', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
 
       let matriculaId = null;
@@ -64,7 +104,7 @@ export const PortalDashboard: React.FC = () => {
       const { data: faturasData } = await supabase
         .from('faturas')
         .select('id, mes_referencia, data_vencimento, valor, status')
-        .eq('aluno_id', escolaAtiva.id)
+        .eq('aluno_id', alunoMembroId ?? '')
         .order('data_vencimento', { ascending: false });
 
       if (faturasData) {
@@ -150,10 +190,30 @@ export const PortalDashboard: React.FC = () => {
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-3xl p-8 shadow-lg text-white">
         <h2 className="text-3xl font-bold mb-2">Bem-vindo(a) ao seu Portal, {perfil?.nome.split(' ')[0]}!</h2>
-        <p className="text-indigo-100 max-w-2xl">
-          Aqui você encontra seu boletim, avisos importantes e a situação financeira.
-          Turma atual: <strong>{turmaNome}</strong>
-        </p>
+        {ehResponsavel ? (
+          semVinculo ? (
+            <p className="text-indigo-100 max-w-2xl">Nenhum aluno está vinculado ao seu acesso. Procure a secretaria da escola.</p>
+          ) : (
+            <div className="text-indigo-100 max-w-2xl space-y-3">
+              <p>Aqui você acompanha o boletim, a presença e as faturas do(a) aluno(a). Turma atual: <strong>{turmaNome}</strong></p>
+              {filhos.length > 1 && (
+                <label className="flex items-center gap-3 text-sm font-semibold">
+                  Aluno(a):
+                  <select value={alunoSel ?? ''} onChange={(e) => setAlunoSel(e.target.value)}
+                    className="rounded-lg px-3 py-2 text-gray-900 bg-white">
+                    {filhos.map((f) => <option key={f.perfilId} value={f.perfilId}>{f.nome}</option>)}
+                  </select>
+                </label>
+              )}
+              {filhos.length === 1 && <p className="text-sm">Aluno(a): <strong>{filhos[0].nome}</strong></p>}
+            </div>
+          )
+        ) : (
+          <p className="text-indigo-100 max-w-2xl">
+            Aqui você encontra seu boletim, avisos importantes e a situação financeira.
+            Turma atual: <strong>{turmaNome}</strong>
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

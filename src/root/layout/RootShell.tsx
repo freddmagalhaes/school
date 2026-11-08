@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, DollarSign, Shield, Settings,
   LogOut, ChevronLeft, ChevronRight, GraduationCap, Wrench,
-  Sun, Moon, Target
+  Sun, Moon, Target, LifeBuoy, ClipboardList, MessagesSquare
 } from 'lucide-react';
 import { useRootAuth, ROLE_CONFIG, ROLE_PERMISSIONS } from '../../contexts/RootAuthContext';
 import type { RootRole } from '../../contexts/RootAuthContext';
@@ -33,6 +33,18 @@ const NAV_ITEMS = [
     roles: ROLE_PERMISSIONS.clientes,
   },
   {
+    path: 'atendimento',
+    label: 'Atendimento',
+    icon: MessagesSquare,
+    roles: ROLE_PERMISSIONS.atendimento,
+  },
+  {
+    path: 'suporte',
+    label: 'Suporte',
+    icon: LifeBuoy,
+    roles: ROLE_PERMISSIONS.suporte,
+  },
+  {
     path: 'financeiro',
     label: 'Financeiro',
     icon: DollarSign,
@@ -43,6 +55,12 @@ const NAV_ITEMS = [
     label: 'Equipe',
     icon: Shield,
     roles: ROLE_PERMISSIONS.equipe,
+  },
+  {
+    path: 'auditoria',
+    label: 'Auditoria',
+    icon: ClipboardList,
+    roles: ROLE_PERMISSIONS.auditoria,
   },
   {
     path: 'configuracoes',

@@ -1,10 +1,11 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, GraduationCap, User } from 'lucide-react';
+import { LogOut, GraduationCap } from 'lucide-react';
+import { TermosAceiteModal } from '../components/LGPD/TermosAceiteModal';
 
 export const PortalLayout: React.FC = () => {
-  const { user, escolaAtiva, signOut, loading } = useAuth();
+  const { user, perfil, escolaAtiva, signOut, loading } = useAuth();
 
   if (loading) {
     return (
@@ -30,7 +31,7 @@ export const PortalLayout: React.FC = () => {
                 <GraduationCap className="text-white h-7 w-7" />
               </div>
               <h1 className="text-2xl font-extrabold text-white tracking-tight">
-                Portal do Aluno
+                {escolaAtiva?.papel === 'Responsavel' ? 'Portal da Família' : 'Portal do Aluno'}
                 {escolaAtiva && <span className="font-medium text-indigo-200 ml-3 text-lg opacity-80">| {escolaAtiva.escola.nome}</span>}
               </h1>
             </div>
@@ -38,7 +39,7 @@ export const PortalLayout: React.FC = () => {
             <div className="flex items-center gap-5">
               <div className="hidden sm:flex flex-col items-end text-indigo-100">
                 <span className="text-sm font-bold text-white">{user.email}</span>
-                <span className="text-xs text-indigo-300 font-medium uppercase tracking-widest">Área do Aluno</span>
+                <span className="text-xs text-indigo-300 font-medium uppercase tracking-widest">{escolaAtiva?.papel === 'Responsavel' ? 'Área do Responsável' : 'Área do Aluno'}</span>
               </div>
               <button
                 onClick={signOut}
@@ -51,6 +52,9 @@ export const PortalLayout: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Aluno e responsável também precisam aceitar os Termos e a Política de Privacidade (dados de menores) */}
+      {perfil && !perfil.aceitou_termos_em && <TermosAceiteModal />}
 
       {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">

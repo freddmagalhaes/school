@@ -1,0 +1,10 @@
+DROP POLICY IF EXISTS audit_owner_select ON public.audit_logs;
+GRANT UPDATE, DELETE ON public.audit_logs TO authenticated;
+DROP FUNCTION IF EXISTS public.suporte_aluno(uuid, uuid, text);
+DROP FUNCTION IF EXISTS public.suporte_estrutura(uuid, text);
+DROP FUNCTION IF EXISTS public.suporte_usuarios(uuid, text);
+DROP FUNCTION IF EXISTS public.suporte_escola_resumo(uuid);
+DROP FUNCTION IF EXISTS public.suporte_escolas();
+DROP FUNCTION IF EXISTS public.suporte_exige(smallint, uuid, text, text, jsonb);
+DROP FUNCTION IF EXISTS public.suporte_nivel();
+ALTER TABLE public.root_admins DROP COLUMN IF EXISTS nivel_suporte;
